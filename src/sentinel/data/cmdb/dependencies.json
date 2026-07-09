@@ -1,0 +1,107 @@
+[
+  {
+    "service": "checkout-api",
+    "upstream": ["api-gateway", "auth-service", "inventory-api", "payments-gateway"],
+    "downstream": ["order-service", "billing-worker", "notification-service"]
+  },
+  {
+    "service": "payments-gateway",
+    "upstream": ["auth-service"],
+    "downstream": ["checkout-api", "billing-worker"]
+  },
+  {
+    "service": "inventory-api",
+    "upstream": ["api-gateway", "postgres-primary", "redis-cluster"],
+    "downstream": ["checkout-api", "order-service", "search-service"]
+  },
+  {
+    "service": "auth-service",
+    "upstream": ["postgres-primary", "redis-cluster"],
+    "downstream": ["api-gateway", "checkout-api", "payments-gateway", "order-service", "user-profile-service"]
+  },
+  {
+    "service": "api-gateway",
+    "upstream": ["auth-service", "cdn-edge"],
+    "downstream": ["checkout-api", "order-service", "search-service", "inventory-api", "notification-service"]
+  },
+  {
+    "service": "order-service",
+    "upstream": ["api-gateway", "checkout-api", "inventory-api", "auth-service", "kafka-cluster"],
+    "downstream": ["notification-service", "billing-worker"]
+  },
+  {
+    "service": "notification-service",
+    "upstream": ["order-service", "checkout-api", "api-gateway", "flow-engine", "billing-worker", "user-profile-service", "kafka-cluster"],
+    "downstream": []
+  },
+  {
+    "service": "search-service",
+    "upstream": ["api-gateway", "inventory-api", "recommendation-engine"],
+    "downstream": []
+  },
+  {
+    "service": "recommendation-engine",
+    "upstream": ["postgres-primary", "redis-cluster", "analytics-pipeline", "user-profile-service"],
+    "downstream": ["search-service"]
+  },
+  {
+    "service": "flow-engine",
+    "upstream": ["flow-orchestrator", "kafka-cluster", "postgres-primary"],
+    "downstream": ["notification-service"]
+  },
+  {
+    "service": "flow-orchestrator",
+    "upstream": ["kafka-cluster", "redis-cluster"],
+    "downstream": ["flow-engine"]
+  },
+  {
+    "service": "billing-worker",
+    "upstream": ["checkout-api", "order-service", "payments-gateway", "kafka-cluster"],
+    "downstream": ["notification-service"]
+  },
+  {
+    "service": "user-profile-service",
+    "upstream": ["auth-service", "postgres-primary"],
+    "downstream": ["recommendation-engine", "notification-service"]
+  },
+  {
+    "service": "cdn-edge",
+    "upstream": [],
+    "downstream": ["api-gateway"]
+  },
+  {
+    "service": "postgres-primary",
+    "upstream": [],
+    "downstream": ["auth-service", "inventory-api", "recommendation-engine", "flow-engine", "user-profile-service", "analytics-pipeline"]
+  },
+  {
+    "service": "redis-cluster",
+    "upstream": [],
+    "downstream": ["auth-service", "inventory-api", "recommendation-engine", "flow-orchestrator"]
+  },
+  {
+    "service": "kafka-cluster",
+    "upstream": [],
+    "downstream": ["order-service", "notification-service", "flow-engine", "flow-orchestrator", "billing-worker", "analytics-pipeline", "metrics-collector", "log-aggregator"]
+  },
+  {
+    "service": "metrics-collector",
+    "upstream": ["kafka-cluster"],
+    "downstream": []
+  },
+  {
+    "service": "log-aggregator",
+    "upstream": ["kafka-cluster"],
+    "downstream": []
+  },
+  {
+    "service": "ci-cd-pipeline",
+    "upstream": [],
+    "downstream": []
+  },
+  {
+    "service": "analytics-pipeline",
+    "upstream": ["kafka-cluster", "postgres-primary"],
+    "downstream": ["recommendation-engine"]
+  }
+]

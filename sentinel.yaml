@@ -1,0 +1,16 @@
+# Sentinel configuration
+# Override model via: SENTINEL_MODEL=claude-opus (short name) or full gateway name
+# Auth via: ANTHROPIC_AUTH_TOKEN (gateway) or ANTHROPIC_API_KEY (direct)
+
+model:
+  default: "claude-sonnet"
+  fallback: "claude-opus"
+  temperature: 0.0
+  max_tokens: 1024
+
+output:
+  jsonl_path: "./data/incidents.jsonl"
+  console_format: "rich"  # rich | json | minimal
+
+logging:
+  level: "INFO"

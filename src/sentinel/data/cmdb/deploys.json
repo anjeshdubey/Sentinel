@@ -1,0 +1,242 @@
+[
+  {
+    "service": "checkout-api",
+    "version": "v2.14.3",
+    "deployed_at": "2026-07-05T14:22:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "add idempotency key to /charge endpoint",
+    "rollback_of": null
+  },
+  {
+    "service": "checkout-api",
+    "version": "v2.14.2",
+    "deployed_at": "2026-07-04T09:15:00Z",
+    "deployed_by": "j.rivera",
+    "change_summary": "fix race condition in cart lock acquisition",
+    "rollback_of": null
+  },
+  {
+    "service": "checkout-api",
+    "version": "v2.14.1",
+    "deployed_at": "2026-07-03T16:30:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "bump payment SDK to v3.8.1",
+    "rollback_of": null
+  },
+  {
+    "service": "payments-gateway",
+    "version": "v5.2.0",
+    "deployed_at": "2026-07-05T11:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "add Stripe Connect support for marketplace sellers",
+    "rollback_of": null
+  },
+  {
+    "service": "payments-gateway",
+    "version": "v5.1.9",
+    "deployed_at": "2026-07-04T08:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "increase connection pool timeout to 30s",
+    "rollback_of": null
+  },
+  {
+    "service": "auth-service",
+    "version": "v4.1.0",
+    "deployed_at": "2026-07-02T10:30:00Z",
+    "deployed_by": "s.patel",
+    "change_summary": "add PKCE support for mobile OAuth flow",
+    "rollback_of": null
+  },
+  {
+    "service": "auth-service",
+    "version": "v4.0.9",
+    "deployed_at": "2026-07-03T14:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "rotate JWT signing key (scheduled)",
+    "rollback_of": null
+  },
+  {
+    "service": "inventory-api",
+    "version": "v3.7.2",
+    "deployed_at": "2026-07-06T13:45:00Z",
+    "deployed_by": "m.chen",
+    "change_summary": "fix deadlock in stock reservation under high concurrency",
+    "rollback_of": null
+  },
+  {
+    "service": "inventory-api",
+    "version": "v3.7.1",
+    "deployed_at": "2026-07-04T17:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "add warehouse priority routing",
+    "rollback_of": null
+  },
+  {
+    "service": "api-gateway",
+    "version": "v8.0.3",
+    "deployed_at": "2026-06-30T06:00:00Z",
+    "deployed_by": "k.johnson",
+    "change_summary": "update rate limit config: 10k req/min for enterprise tier",
+    "rollback_of": null
+  },
+  {
+    "service": "order-service",
+    "version": "v6.3.1",
+    "deployed_at": "2026-07-06T15:30:00Z",
+    "deployed_by": "l.garcia",
+    "change_summary": "fix order status webhook retry logic",
+    "rollback_of": null
+  },
+  {
+    "service": "order-service",
+    "version": "v6.3.0",
+    "deployed_at": "2026-07-04T11:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "add bulk order creation endpoint",
+    "rollback_of": null
+  },
+  {
+    "service": "notification-service",
+    "version": "v2.9.0",
+    "deployed_at": "2026-07-06T09:00:00Z",
+    "deployed_by": "a.kim",
+    "change_summary": "migrate SMS provider from Twilio to internal gateway",
+    "rollback_of": null
+  },
+  {
+    "service": "search-service",
+    "version": "v5.1.4",
+    "deployed_at": "2026-07-07T12:00:00Z",
+    "deployed_by": "r.thompson",
+    "change_summary": "reindex product catalog with updated synonyms",
+    "rollback_of": null
+  },
+  {
+    "service": "recommendation-engine",
+    "version": "v1.8.0",
+    "deployed_at": "2026-07-04T20:00:00Z",
+    "deployed_by": "d.wang",
+    "change_summary": "deploy updated collaborative filtering model v3",
+    "rollback_of": null
+  },
+  {
+    "service": "flow-engine",
+    "version": "v7.2.1",
+    "deployed_at": "2026-07-06T08:30:00Z",
+    "deployed_by": "p.martinez",
+    "change_summary": "fix timeout handling in long-running flow steps",
+    "rollback_of": null
+  },
+  {
+    "service": "flow-engine",
+    "version": "v7.2.0",
+    "deployed_at": "2026-07-03T10:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "add parallel execution support for flow branches",
+    "rollback_of": null
+  },
+  {
+    "service": "flow-orchestrator",
+    "version": "v3.4.0",
+    "deployed_at": "2026-07-01T07:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "increase max concurrent flow executions to 500",
+    "rollback_of": null
+  },
+  {
+    "service": "billing-worker",
+    "version": "v2.3.1",
+    "deployed_at": "2026-07-04T15:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "fix invoice generation for pro-rated subscriptions",
+    "rollback_of": null
+  },
+  {
+    "service": "redis-cluster",
+    "version": "v7.2.4",
+    "deployed_at": "2026-07-03T22:00:00Z",
+    "deployed_by": "t.nguyen",
+    "change_summary": "rolling upgrade to Redis 7.2.4 (security patch)",
+    "rollback_of": null
+  },
+  {
+    "service": "kafka-cluster",
+    "version": "v3.6.1",
+    "deployed_at": "2026-07-02T04:00:00Z",
+    "deployed_by": "t.nguyen",
+    "change_summary": "increase partition count for order-events topic",
+    "rollback_of": null
+  },
+  {
+    "service": "postgres-primary",
+    "version": "v16.3",
+    "deployed_at": "2026-07-01T02:00:00Z",
+    "deployed_by": "t.nguyen",
+    "change_summary": "scheduled maintenance: vacuum + analyze on large tables",
+    "rollback_of": null
+  },
+  {
+    "service": "cdn-edge",
+    "version": "v1.12.0",
+    "deployed_at": "2026-07-04T03:00:00Z",
+    "deployed_by": "k.johnson",
+    "change_summary": "add cache-control headers for new static asset paths",
+    "rollback_of": null
+  },
+  {
+    "service": "metrics-collector",
+    "version": "v2.45.0",
+    "deployed_at": "2026-07-07T05:00:00Z",
+    "deployed_by": "e.brown",
+    "change_summary": "add custom metrics for flow-engine latency buckets",
+    "rollback_of": null
+  },
+  {
+    "service": "checkout-api",
+    "version": "v2.13.8",
+    "deployed_at": "2026-07-02T08:30:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "refactor connection pooling to shared HttpClient singleton",
+    "rollback_of": null
+  },
+  {
+    "service": "checkout-api",
+    "version": "v2.13.9",
+    "deployed_at": "2026-07-02T10:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "rollback: revert v2.13.8 (caused 503s under load)",
+    "rollback_of": "v2.13.8"
+  },
+  {
+    "service": "analytics-pipeline",
+    "version": "v1.4.2",
+    "deployed_at": "2026-07-06T16:00:00Z",
+    "deployed_by": "t.nguyen",
+    "change_summary": "add click-stream event deduplication",
+    "rollback_of": null
+  },
+  {
+    "service": "analytics-pipeline",
+    "version": "v1.4.1",
+    "deployed_at": "2026-07-03T11:00:00Z",
+    "deployed_by": "cicd-bot",
+    "change_summary": "update Spark job config for larger shuffle partitions",
+    "rollback_of": null
+  },
+  {
+    "service": "user-profile-service",
+    "version": "v2.1.0",
+    "deployed_at": "2026-07-07T14:00:00Z",
+    "deployed_by": "s.patel",
+    "change_summary": "add GDPR data export endpoint",
+    "rollback_of": null
+  },
+  {
+    "service": "log-aggregator",
+    "version": "v3.2.1",
+    "deployed_at": "2026-07-04T21:00:00Z",
+    "deployed_by": "e.brown",
+    "change_summary": "increase log retention to 30 days for compliance",
+    "rollback_of": null
+  }
+]

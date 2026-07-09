@@ -1,0 +1,170 @@
+[
+  {
+    "service": "checkout-api",
+    "team": "payments",
+    "tier": 0,
+    "escalation_channel": "#payments-oncall",
+    "manager": "j.rivera@example.com",
+    "aliases": ["checkout", "checkout-svc", "checkout-service", "Checkout API"]
+  },
+  {
+    "service": "payments-gateway",
+    "team": "payments",
+    "tier": 0,
+    "escalation_channel": "#payments-oncall",
+    "manager": "j.rivera@example.com",
+    "aliases": ["payments", "payment-gateway", "payments-service", "pay-gw"]
+  },
+  {
+    "service": "inventory-api",
+    "team": "supply-chain",
+    "tier": 1,
+    "escalation_channel": "#supply-chain-oncall",
+    "manager": "m.chen@example.com",
+    "aliases": ["inventory", "inventory-svc"]
+  },
+  {
+    "service": "auth-service",
+    "team": "identity",
+    "tier": 0,
+    "escalation_channel": "#identity-oncall",
+    "manager": "s.patel@example.com",
+    "aliases": ["auth", "authentication", "auth-svc"]
+  },
+  {
+    "service": "api-gateway",
+    "team": "platform",
+    "tier": 0,
+    "escalation_channel": "#platform-oncall",
+    "manager": "k.johnson@example.com",
+    "aliases": ["gateway", "api-gw", "kong"]
+  },
+  {
+    "service": "order-service",
+    "team": "commerce",
+    "tier": 1,
+    "escalation_channel": "#commerce-oncall",
+    "manager": "l.garcia@example.com",
+    "aliases": ["orders", "order-svc", "order-processor"]
+  },
+  {
+    "service": "notification-service",
+    "team": "messaging",
+    "tier": 2,
+    "escalation_channel": "#messaging-oncall",
+    "manager": "a.kim@example.com",
+    "aliases": ["notifications", "notif-svc", "notify"]
+  },
+  {
+    "service": "search-service",
+    "team": "discovery",
+    "tier": 1,
+    "escalation_channel": "#discovery-oncall",
+    "manager": "r.thompson@example.com",
+    "aliases": ["search", "search-api", "elasticsearch"]
+  },
+  {
+    "service": "recommendation-engine",
+    "team": "ml-platform",
+    "tier": 2,
+    "escalation_channel": "#ml-platform-oncall",
+    "manager": "d.wang@example.com",
+    "aliases": ["recommendations", "reco-engine", "rec-svc"]
+  },
+  {
+    "service": "flow-engine",
+    "team": "automation",
+    "tier": 1,
+    "escalation_channel": "#automation-oncall",
+    "manager": "p.martinez@example.com",
+    "aliases": ["flow", "flows", "workflow-engine"]
+  },
+  {
+    "service": "flow-orchestrator",
+    "team": "automation",
+    "tier": 1,
+    "escalation_channel": "#automation-oncall",
+    "manager": "p.martinez@example.com",
+    "aliases": ["orchestrator", "flow-orch"]
+  },
+  {
+    "service": "billing-worker",
+    "team": "payments",
+    "tier": 1,
+    "escalation_channel": "#payments-oncall",
+    "manager": "j.rivera@example.com",
+    "aliases": ["billing", "billing-svc"]
+  },
+  {
+    "service": "user-profile-service",
+    "team": "identity",
+    "tier": 2,
+    "escalation_channel": "#identity-oncall",
+    "manager": "s.patel@example.com",
+    "aliases": ["user-profile", "profiles", "profile-svc"]
+  },
+  {
+    "service": "cdn-edge",
+    "team": "platform",
+    "tier": 0,
+    "escalation_channel": "#platform-oncall",
+    "manager": "k.johnson@example.com",
+    "aliases": ["cdn", "edge", "cloudfront"]
+  },
+  {
+    "service": "postgres-primary",
+    "team": "data-platform",
+    "tier": 0,
+    "escalation_channel": "#data-platform-oncall",
+    "manager": "t.nguyen@example.com",
+    "aliases": ["postgres", "pg-primary", "db-primary"]
+  },
+  {
+    "service": "redis-cluster",
+    "team": "data-platform",
+    "tier": 1,
+    "escalation_channel": "#data-platform-oncall",
+    "manager": "t.nguyen@example.com",
+    "aliases": ["redis", "cache-cluster", "redis-cache"]
+  },
+  {
+    "service": "kafka-cluster",
+    "team": "data-platform",
+    "tier": 0,
+    "escalation_channel": "#data-platform-oncall",
+    "manager": "t.nguyen@example.com",
+    "aliases": ["kafka", "event-bus", "message-bus"]
+  },
+  {
+    "service": "metrics-collector",
+    "team": "observability",
+    "tier": 2,
+    "escalation_channel": "#observability-oncall",
+    "manager": "e.brown@example.com",
+    "aliases": ["metrics", "prometheus", "collector"]
+  },
+  {
+    "service": "log-aggregator",
+    "team": "observability",
+    "tier": 2,
+    "escalation_channel": "#observability-oncall",
+    "manager": "e.brown@example.com",
+    "aliases": ["logs", "logging", "log-service"]
+  },
+  {
+    "service": "ci-cd-pipeline",
+    "team": "devtools",
+    "tier": 2,
+    "escalation_channel": "#devtools-oncall",
+    "manager": "h.lee@example.com",
+    "aliases": ["cicd", "pipeline", "jenkins", "ci"]
+  },
+  {
+    "service": "analytics-pipeline",
+    "team": "data-platform",
+    "tier": 2,
+    "escalation_channel": "#data-platform-oncall",
+    "manager": "t.nguyen@example.com",
+    "aliases": ["analytics", "analytics-service", "analytics-api"]
+  }
+]
