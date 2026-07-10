@@ -13,21 +13,28 @@ Built from raw Anthropic SDK (not a framework) with:
 - **FastAPI + Modal** for serverless backend
 - **Static frontend** (GitHub Pages)
 
-## Quick Start (Local)
+## Quick Start (Backend Development)
+
+This repo is designed for deployment as a demo backend + frontend. For local development:
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Index runbooks
-python scripts/index_seed_runbooks.py
-
-# Run triage on demo alert
-python -m sentinel.cli triage --alert backend/fixtures/checkout-deploy.json
-
-# Start MCP server (optional)
-python -m sentinel.mcp
+# Test triage function directly
+python
+>>> from sentinel.triage.engine import triage_alert
+>>> from sentinel.ingestion.loader import load_from_file
+>>> from sentinel.config import load_settings
+>>> from sentinel.observability import TraceCollector
+>>>
+>>> settings = load_settings()
+>>> alert = load_from_file('backend/fixtures/checkout-deploy.json')
+>>> collector = TraceCollector(verbose=True)
+>>> incident = triage_alert(alert, settings, collector=collector)
 ```
+
+**Note:** CLI and MCP server have been removed to minimize dependencies for demo deployment.
 
 ## Demo Deployment
 
