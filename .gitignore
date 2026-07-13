@@ -31,3 +31,4 @@ data/incidents.jsonl
 # OS
 .DS_Store
 Thumbs.db
+backend/.cache/

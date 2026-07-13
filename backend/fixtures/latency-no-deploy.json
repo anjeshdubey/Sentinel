@@ -1,0 +1,21 @@
+{
+  "source": "grafana",
+  "timestamp": "2026-07-11T14:50:12Z",
+  "raw_payload": {
+    "title": "API Latency Warning - checkout-service",
+    "state": "alerting",
+    "message": "P95 latency on checkout-service /api/v2/checkout endpoint has increased from 450ms baseline to 1,250ms over the last 30 minutes.",
+    "evalMatches": [
+      {
+        "metric": "http_request_duration_p95",
+        "tags": {"service": "checkout", "endpoint": "/api/v2/checkout"},
+        "value": 1250
+      }
+    ],
+    "ruleUrl": "https://grafana.example.com/d/checkout/latency?orgId=1"
+  },
+  "metadata": {
+    "alert_rule": "checkout_latency_warning",
+    "severity": "warning"
+  }
+}

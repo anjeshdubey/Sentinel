@@ -1,0 +1,18 @@
+{
+  "source": "slack",
+  "timestamp": "2026-07-13T11:35:22Z",
+  "raw_payload": {
+    "channel": "#incidents",
+    "user": "alice",
+    "text": "hey something seems off with the site... pages are loading really slow and i got an error once but it went away when i refreshed. anyone else seeing this?",
+    "ts": "1720523722.123456",
+    "thread_ts": null,
+    "reactions": [
+      {"name": "eyes", "count": 3}
+    ]
+  },
+  "metadata": {
+    "channel_name": "incidents",
+    "user_email": "alice@example.com"
+  }
+}

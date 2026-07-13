@@ -1,4 +1,4 @@
-"""Structured extraction via Instructor + Anthropic SDK (through LLM gateway)."""
+"""Structured extraction via Instructor + Anthropic SDK."""
 
 from typing import Optional
 
@@ -73,23 +73,20 @@ def extract_incident(
 ) -> LLMIncidentExtraction:
     """Call Claude via Instructor to extract structured incident data.
 
-    Uses the Salesforce LLM gateway (ANTHROPIC_AUTH_TOKEN + ANTHROPIC_BASE_URL)
-    by default. Falls back to direct Anthropic API if ANTHROPIC_API_KEY is set
-    and no gateway config is present.
+    Uses the direct Anthropic API (ANTHROPIC_API_KEY).
 
     Args:
         system_prompt: System prompt with triage instructions.
         user_prompt: Rendered user prompt with alert data.
-        model: Claude model identifier (short name or gateway full name).
+        model: Claude model identifier (short alias or full model ID).
         temperature: Sampling temperature (0.0 for deterministic).
         max_tokens: Max response tokens.
-        api_key: Override auth token (optional — normally loaded from env).
+        api_key: Override API key (optional — normally loaded from env).
         max_retries: Number of retry attempts on validation failure.
 
     Returns:
         Validated LLMIncidentExtraction with all LLM-determined fields.
     """
-    # Create gateway-aware client
     if api_key:
         # Explicit key passed — build config manually (for testing)
         config = GatewayConfig.from_env()
@@ -100,7 +97,7 @@ def extract_incident(
     raw_client = create_client(config)
     client = instructor.from_anthropic(raw_client)
 
-    # Resolve model name to gateway format
+    # Resolve model alias to full Anthropic model ID
     resolved_model = resolve_model(model)
 
     return client.messages.create(

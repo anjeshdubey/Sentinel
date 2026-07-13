@@ -10,8 +10,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class ModelConfig(BaseSettings):
     """LLM model configuration.
 
-    Model names can be short aliases (e.g. "claude-sonnet") or full gateway
-    names (e.g. "global.anthropic.claude-sonnet-4-6"). The gateway module
+    Model names can be short aliases (e.g. "claude-sonnet") or full Anthropic
+    model IDs (e.g. "claude-sonnet-4-5-20250929"). The sentinel.gateway module
     resolves aliases at call time.
     """
 
@@ -166,8 +166,8 @@ class Settings(BaseSettings):
     2. sentinel.yaml in project root
     3. Defaults defined here
 
-    Gateway auth is handled separately by sentinel.gateway module
-    (reads ANTHROPIC_AUTH_TOKEN / ANTHROPIC_BASE_URL / SSL_CERT_FILE).
+    Anthropic auth is handled separately by the sentinel.gateway module
+    (reads ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL).
     """
 
     model_config = SettingsConfigDict(

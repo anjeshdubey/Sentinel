@@ -1,0 +1,25 @@
+{
+  "source": "pagerduty",
+  "timestamp": "2026-07-13T10:20:00Z",
+  "raw_payload": {
+    "incident": {
+      "id": "PD-12345",
+      "title": "High Error Rate on checkout-service",
+      "status": "triggered",
+      "urgency": "high",
+      "service": {
+        "id": "PSVC-CHECKOUT",
+        "name": "checkout"
+      },
+      "body": {
+        "type": "incident_body",
+        "details": "503 errors on /api/v2/checkout endpoint. Error rate: 23.4% (threshold: 5%). Error message: 'Connection pool exhausted - unable to acquire connection within timeout'. Impact: US-WEST-2, ~8,000 users affected in last 15 minutes."
+      },
+      "created_at": "2026-07-13T10:20:00Z"
+    }
+  },
+  "metadata": {
+    "routing_key": "team-checkout",
+    "escalation_policy": "checkout-oncall"
+  }
+}

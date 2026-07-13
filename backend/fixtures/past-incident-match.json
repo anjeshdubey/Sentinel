@@ -1,0 +1,20 @@
+{
+  "source": "datadog",
+  "timestamp": "2026-07-13T16:12:08Z",
+  "raw_payload": {
+    "id": "12345678",
+    "title": "auth-service intermittent 401 errors",
+    "status": "alert",
+    "priority": "normal",
+    "body": "Auth service returning 401 Unauthorized intermittently. Error pattern: 'OAuth token validation failed - cache miss'. Affecting ~2% of requests. Users see login page unexpectedly. Started 20 minutes ago.",
+    "tags": ["service:auth", "env:prod", "region:us-west-2"],
+    "host": "auth-prod-us-west-2-7a3f",
+    "monitors": [
+      {"id": 9876543, "name": "auth 401 error rate"}
+    ]
+  },
+  "metadata": {
+    "alert_type": "error",
+    "event_type": "monitor_alert"
+  }
+}

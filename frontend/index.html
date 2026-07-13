@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel — AI SRE Triage Agent</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="badges">
+      <span class="badge">Claude</span>
+      <span class="badge">RAG (Qdrant)</span>
+      <span class="badge">Tool Calling</span>
+      <span class="badge">FastAPI</span>
+    </div>
+    <h1>Sentinel — AI SRE Triage Agent</h1>
+    <p class="subtitle">
+      An agent that reads incident alerts, calls tools to gather context,
+      retrieves relevant runbooks, and produces a structured diagnosis —
+      built from raw Anthropic SDK, not a framework.
+    </p>
+    <a class="repo-link" href="#" target="_blank" rel="noopener">Architecture notes / repo →</a>
+  </header>
+
+  <main>
+    <section class="scenarios">
+      <h2>Click a scenario to watch it triage in real time</h2>
+      <div class="scenario-grid" id="scenario-grid">
+        <!-- populated by app.js -->
+      </div>
+    </section>
+
+    <section class="trace-panel" id="trace-panel" hidden>
+      <div class="trace-header">
+        <h2 id="trace-title">Reasoning trace</h2>
+        <span class="cache-badge" id="cache-badge" hidden>⚡ Cached execution</span>
+        <button class="close-btn" id="close-trace">✕</button>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built by Anjesh Dubey — <a href="#" target="_blank" rel="noopener">architecture notes</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

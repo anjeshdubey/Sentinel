@@ -1,0 +1,30 @@
+[
+  {
+    "id": "checkout-deploy",
+    "title": "🔴 Checkout down after deploy",
+    "severity_hint": "critical",
+    "description": "Critical outage correlated with recent deployment",
+    "why_interesting": "Shows deploy correlation + ownership lookup"
+  },
+  {
+    "id": "slack-vague",
+    "title": "🟡 Vague Slack report",
+    "severity_hint": "warning",
+    "description": "Ambiguous user report with missing context",
+    "why_interesting": "Demonstrates handling of low-signal alerts"
+  },
+  {
+    "id": "latency-no-deploy",
+    "title": "🟢 Latency warning, no deploy",
+    "severity_hint": "warning",
+    "description": "Performance degradation without infrastructure changes",
+    "why_interesting": "Clean negative case — no deploy found in time window"
+  },
+  {
+    "id": "past-incident-match",
+    "title": "🔵 Matches past incident",
+    "severity_hint": "warning",
+    "description": "Similar symptoms to a previously resolved incident",
+    "why_interesting": "Showcases RAG retrieval from incident history"
+  }
+]

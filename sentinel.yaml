@@ -1,6 +1,6 @@
 # Sentinel configuration
-# Override model via: SENTINEL_MODEL=claude-opus (short name) or full gateway name
-# Auth via: ANTHROPIC_AUTH_TOKEN (gateway) or ANTHROPIC_API_KEY (direct)
+# Override model via: SENTINEL_MODEL=claude-opus (short alias) or a full Anthropic model ID
+# Auth via: ANTHROPIC_API_KEY
 
 model:
   default: "claude-sonnet"

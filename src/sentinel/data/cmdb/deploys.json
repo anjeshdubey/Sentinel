@@ -1,6 +1,14 @@
 [
   {
     "service": "checkout-api",
+    "version": "v2.15.0",
+    "deployed_at": "2026-07-13T10:08:00Z",
+    "deployed_by": "bob",
+    "change_summary": "Increase connection pool timeout to 30s",
+    "rollback_of": null
+  },
+  {
+    "service": "checkout-api",
     "version": "v2.14.3",
     "deployed_at": "2026-07-05T14:22:00Z",
     "deployed_by": "cicd-bot",
