@@ -1,0 +1,221 @@
+:root {
+  --bg: #0b0e14;
+  --panel: #11151f;
+  --panel-2: #161b28;
+  --border: #232937;
+  --text: #e6e9f0;
+  --text-dim: #8b93a7;
+  --accent: #6ea8fe;
+  --critical: #ff5d5d;
+  --warning: #f5b942;
+  --good: #3ddc97;
+  --mono: "SF Mono", "Fira Code", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+header.hero {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 64px 24px 32px;
+  text-align: center;
+}
+
+.badges {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  background: var(--panel);
+}
+
+h1 {
+  font-size: 2.2rem;
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--text-dim);
+  font-size: 1.05rem;
+  max-width: 620px;
+  margin: 0 auto 20px;
+}
+
+.repo-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.repo-link:hover { text-decoration: underline; }
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+}
+
+.scenarios h2 {
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.scenario-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  color: var(--text);
+  font: inherit;
+}
+
+.scenario-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.scenario-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.scenario-card p {
+  margin: 4px 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.scenario-card .why {
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-top: 10px;
+}
+
+.trace-panel {
+  margin-top: 40px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.trace-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.trace-header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.cache-badge {
+  font-size: 0.75rem;
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.close-btn:hover { color: var(--text); }
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.step {
+  border-left: 2px solid var(--border);
+  padding: 4px 0 4px 16px;
+  animation: fade-in 0.3s ease;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.step .step-label {
+  font-weight: 600;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.step.alert { border-color: var(--critical); }
+.step.tool_call, .step.tool_result { border-color: var(--good); }
+.step.rag_query, .step.rag_results { border-color: var(--accent); }
+.step.llm_call { border-color: var(--warning); }
+.step.diagnosis { border-color: #fff; background: var(--panel-2); border-radius: 6px; padding: 12px 16px; }
+
+.step pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-dim);
+}
+
+footer {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  padding: 24px;
+}
+
+footer a { color: var(--accent); }
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --panel-2: #f0f2f6;
+    --border: #e2e5ec;
+    --text: #1a1d24;
+    --text-dim: #5b6270;
+  }
+}

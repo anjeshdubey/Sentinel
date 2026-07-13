@@ -7,7 +7,7 @@ FastAPI + Modal backend for streaming triage execution.
 1. Install Modal: `pip install modal`
 2. Authenticate: `modal token new`
 3. Set secrets: `modal secret create anthropic-api-key ANTHROPIC_API_KEY=sk-ant-...`
-4. Deploy: `modal deploy demo_app.py`
+4. Deploy: `modal deploy backend/modal_app.py` (run from the repo root)
 
 ## Endpoints
 
