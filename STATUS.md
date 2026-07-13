@@ -9,9 +9,8 @@
 ## ✅ Completed
 
 ### 1. Clean Repository Structure
-- **Location:** `/Users/anjesh.dubey/AIProjects/sentinel-demo`
+- **Location:** `/Users/anjeshdubey/projects/sentinel-demo`
 - **Remote:** https://git.soma.salesforce.com/adubey/sentinel-demo
-- **Commits:** 5 (726e136 latest)
 
 ### 2. File Optimization
 | Metric | Result |
@@ -225,7 +224,6 @@ Create 4 JSON files per PRD Section 3.6.4:
 ## 🔗 Links
 
 - **Demo Repo:** https://git.soma.salesforce.com/adubey/sentinel-demo
-- **Main Repo:** https://git.soma.salesforce.com/adubey/sentinel
 - **PRD:** `/Users/anjesh.dubey/adubey-obsidian-vault/01_Projects/Sentinel SRE Triage Agent/sentinel_demo_mvp_prd.md`
 - **Live Demo:** [To be deployed]
 
