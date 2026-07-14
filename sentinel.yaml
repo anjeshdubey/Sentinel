@@ -1,7 +1,19 @@
 # Sentinel configuration
-# Override provider via: SENTINEL_PROVIDER=anthropic | gemini | groq
-# Override model via: SENTINEL_MODEL=claude-opus (short alias) or a full provider model ID
-# Auth via: ANTHROPIC_API_KEY / GEMINI_API_KEY / GROQ_API_KEY (matching the active provider)
+#
+# To switch provider/model, edit model.provider and model.default below and
+# save — the running dev server (uvicorn --reload) picks it up automatically.
+# No env vars or restart needed. Just tell Claude: "switch to gemini and
+# gemini-flash" or "switch to anthropic and claude-opus" and it will make
+# this edit for you.
+#
+# provider: "anthropic" | "gemini" | "groq"
+# default/fallback: short alias (e.g. "claude-sonnet") or full provider model ID
+# Auth: set ANTHROPIC_API_KEY / GEMINI_API_KEY / GROQ_API_KEY matching the
+# active provider (env var, not this file).
+#
+# Can still be overridden per-process via env vars, e.g.
+# SENTINEL_MODEL__PROVIDER=gemini SENTINEL_MODEL__DEFAULT=gemini-flash
+# (env vars take priority over this file).
 
 model:
   provider: "anthropic"

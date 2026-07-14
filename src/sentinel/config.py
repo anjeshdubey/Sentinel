@@ -1,8 +1,9 @@
 """Sentinel configuration — loads from sentinel.yaml + environment variables."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
+import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -186,10 +187,21 @@ class Settings(BaseSettings):
 
 
 def load_settings(config_path: Path | None = None) -> Settings:
-    """Load settings, optionally from a YAML file.
+    """Load settings, merging sentinel.yaml (if present) under env vars.
 
-    For Week 1, we rely on env vars and defaults.
-    YAML loading will be added when the config surface grows.
+    Load order (highest priority wins):
+    1. Environment variables (SENTINEL_MODEL__PROVIDER, etc.)
+    2. sentinel.yaml in project root (or config_path)
+    3. Defaults defined on the Settings/ModelConfig classes
     """
-    # Future: parse sentinel.yaml and merge
-    return Settings()
+    path = config_path or Path("sentinel.yaml")
+    yaml_overrides: dict[str, Any] = {}
+    if path.exists():
+        yaml_overrides = yaml.safe_load(path.read_text()) or {}
+
+    if "logging" in yaml_overrides:
+        level = yaml_overrides.pop("logging").get("level")
+        if level is not None:
+            yaml_overrides["log_level"] = level
+
+    return Settings(**yaml_overrides)
