@@ -67,12 +67,14 @@ def extract_incident(
     model: str,
     temperature: float,
     max_tokens: int,
+    provider: str | None = None,
     api_key: str | None = None,
     max_retries: int = 2,
 ) -> LLMIncidentExtraction:
     """Call the configured LLM provider via Instructor to extract structured incident data.
 
-    Provider is selected via SENTINEL_PROVIDER (defaults to "anthropic").
+    Provider is selected via the `provider` arg (typically settings.model.provider,
+    i.e. sentinel.yaml), falling back to SENTINEL_PROVIDER, then "anthropic".
 
     Args:
         system_prompt: System prompt with triage instructions.
@@ -80,13 +82,15 @@ def extract_incident(
         model: Model identifier (short alias or full model ID, provider-specific).
         temperature: Sampling temperature (0.0 for deterministic).
         max_tokens: Max response tokens.
+        provider: Provider name ("anthropic" | "gemini" | "groq"). Optional —
+            normally sourced from settings.model.provider.
         api_key: Override API key (optional — normally loaded from env).
         max_retries: Number of retry attempts on validation failure.
 
     Returns:
         Validated LLMIncidentExtraction with all LLM-determined fields.
     """
-    config = GatewayConfig.from_env()
+    config = GatewayConfig.from_env(provider=provider)
     if api_key:
         # Explicit key passed — override (for testing)
         config.auth_token = api_key

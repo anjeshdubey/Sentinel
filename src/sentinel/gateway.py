@@ -71,15 +71,23 @@ class GatewayConfig:
     base_url: str | None = None
 
     @classmethod
-    def from_env(cls) -> "GatewayConfig":
+    def from_env(cls, provider: str | None = None) -> "GatewayConfig":
         """Load config from environment variables.
 
-        Reads SENTINEL_PROVIDER (default "anthropic") to pick the provider,
-        then the matching API key env var (ANTHROPIC_API_KEY / GEMINI_API_KEY /
-        GROQ_API_KEY). Optionally reads ANTHROPIC_BASE_URL (Anthropic only,
-        e.g. for a proxy) and SENTINEL_MODEL.
+        Args:
+            provider: Explicit provider (e.g. from sentinel.yaml's model.provider).
+                Takes priority over SENTINEL_PROVIDER when given. Falls back to
+                the SENTINEL_PROVIDER env var, then "anthropic", when omitted.
+
+        Reads the matching API key env var (ANTHROPIC_API_KEY / GEMINI_API_KEY /
+        GROQ_API_KEY) for whichever provider is selected. Optionally reads
+        ANTHROPIC_BASE_URL (Anthropic only, e.g. for a proxy) and SENTINEL_MODEL.
         """
-        provider = os.environ.get("SENTINEL_PROVIDER", "").strip().lower() or DEFAULT_PROVIDER
+        provider = (
+            (provider or "").strip().lower()
+            or os.environ.get("SENTINEL_PROVIDER", "").strip().lower()
+            or DEFAULT_PROVIDER
+        )
 
         if provider not in API_KEY_ENV_VARS:
             raise GatewayConfigError(
