@@ -89,6 +89,7 @@ def triage_alert(
         model=settings.model.default,
         temperature=settings.model.temperature,
         max_tokens=settings.model.max_tokens,
+        provider=settings.model.provider,
     )
 
     if collector:
