@@ -1,12 +1,27 @@
 # Sentinel Test Plan
 
-Status (2026-07-14): **unit tier partially implemented** — 212 tests under `tests/unit/`
-covering `config.py`, `gateway.py` (incl. `create_completion` per-provider call shape),
-`utils/hashing.py`, `models/`, `ingestion/`, `retrieval/query_builder.py`, `tools/`, and
-`backend/guardrails.py`. Still not implemented: `triage/engine.py`/`extractor.py`,
-`retrieval/chunking.py`, `observability/trace.py`, and the entire functional/integration
-tiers described below. `pyproject.toml` already declares the dev toolchain (`pytest`,
-`pytest-asyncio`, `pytest-cov`, `respx`) and two markers (`integration`, `slow`).
+Status (2026-07-14): **unit tier mostly implemented, functional tier started** — 268
+tests under `tests/`. Unit (`tests/unit/`): `config.py`, `gateway.py` (incl.
+`create_completion` per-provider call shape), `utils/hashing.py`, `models/`,
+`ingestion/`, `retrieval/query_builder.py`, `tools/`, `backend/guardrails.py`, and
+`triage/` (`engine.py`, `extractor.py`, `prompts.py` — the LLM boundary is mocked at
+`extract_incident`/`create_completion`, never a real call). Functional
+(`tests/functional/`): the full `triage_alert()` pipeline wired against real fixture
+files with the LLM/retrieval faked, plus `backend/demo_app.py` + `demo_endpoints.py`
+exercised end-to-end via `httpx.ASGITransport` (`/scenarios`, `/health`,
+`/triage/stream` — validation, budget/rate-limit guardrails, cache hit/miss, SSE event
+sequencing, `ToolError` fail-open branches) with the LLM/retriever/tool-provider
+singletons and `triage_alert` monkeypatched at the `demo_endpoints` import site.
+Still not implemented: `retrieval/chunking.py`, `observability/trace.py` (only
+exercised incidentally via other tests, not directly), and the integration tier.
+`pyproject.toml` declares the dev toolchain (`pytest`, `pytest-asyncio`, `pytest-cov`,
+`respx`, now also `fastapi` — needed to import/test `backend/demo_app.py`, previously
+only commented out as a "future" dep) and two markers (`integration`, `slow`); core
+deps now also include `google-genai`/`groq` (previously only in `requirements.txt`,
+which meant `pip install -e ".[dev]"` alone left 2 gateway tests failing on a clean
+venv). Running functional tests requires the `rag` extra too (`pip install -e
+".[dev,rag]"`), since `demo_endpoints.py` eagerly imports `sentinel.retrieval.bootstrap`
+at module load time even though the tests fake the retriever itself.
 
 ## 1. Strategy
 
