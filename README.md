@@ -36,6 +36,14 @@ python
 
 **Note:** CLI and MCP server have been removed to minimize dependencies for demo deployment.
 
+### Switching LLM provider/model
+
+Edit `model.provider` and `model.default` in `sentinel.yaml`, save, and the
+running dev server (`uvicorn --reload`) picks it up on the next request — no
+restart needed. Supported providers: `anthropic`, `gemini`, `groq`. Set the
+matching API key env var (`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` /
+`GROQ_API_KEY`).
+
 ## Demo Deployment
 
 See `backend/` and `frontend/` directories for deployment instructions.
