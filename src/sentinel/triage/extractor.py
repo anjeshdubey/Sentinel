@@ -1,11 +1,10 @@
-"""Structured extraction via Instructor + Anthropic SDK."""
+"""Structured extraction via Instructor (multi-provider)."""
 
 from typing import Optional
 
-import instructor
 from pydantic import BaseModel, Field
 
-from sentinel.gateway import GatewayConfig, create_client, resolve_model
+from sentinel.gateway import GatewayConfig, create_completion
 from sentinel.models.enums import Severity, Urgency
 
 
@@ -71,14 +70,14 @@ def extract_incident(
     api_key: str | None = None,
     max_retries: int = 2,
 ) -> LLMIncidentExtraction:
-    """Call Claude via Instructor to extract structured incident data.
+    """Call the configured LLM provider via Instructor to extract structured incident data.
 
-    Uses the direct Anthropic API (ANTHROPIC_API_KEY).
+    Provider is selected via SENTINEL_PROVIDER (defaults to "anthropic").
 
     Args:
         system_prompt: System prompt with triage instructions.
         user_prompt: Rendered user prompt with alert data.
-        model: Claude model identifier (short alias or full model ID).
+        model: Model identifier (short alias or full model ID, provider-specific).
         temperature: Sampling temperature (0.0 for deterministic).
         max_tokens: Max response tokens.
         api_key: Override API key (optional — normally loaded from env).
@@ -87,25 +86,18 @@ def extract_incident(
     Returns:
         Validated LLMIncidentExtraction with all LLM-determined fields.
     """
+    config = GatewayConfig.from_env()
     if api_key:
-        # Explicit key passed — build config manually (for testing)
-        config = GatewayConfig.from_env()
+        # Explicit key passed — override (for testing)
         config.auth_token = api_key
-    else:
-        config = GatewayConfig.from_env()
 
-    raw_client = create_client(config)
-    client = instructor.from_anthropic(raw_client)
-
-    # Resolve model alias to full Anthropic model ID
-    resolved_model = resolve_model(model)
-
-    return client.messages.create(
-        model=resolved_model,
-        max_tokens=max_tokens,
+    return create_completion(
+        config,
+        model=model,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
         temperature=temperature,
+        max_tokens=max_tokens,
         max_retries=max_retries,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_prompt}],
         response_model=LLMIncidentExtraction,
     )

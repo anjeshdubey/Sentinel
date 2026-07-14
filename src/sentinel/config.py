@@ -10,11 +10,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class ModelConfig(BaseSettings):
     """LLM model configuration.
 
-    Model names can be short aliases (e.g. "claude-sonnet") or full Anthropic
+    Model names can be short aliases (e.g. "claude-sonnet") or full provider
     model IDs (e.g. "claude-sonnet-4-5-20250929"). The sentinel.gateway module
     resolves aliases at call time.
     """
 
+    provider: str = "anthropic"
     default: str = "claude-sonnet"
     fallback: str = "claude-opus"
     temperature: float = 0.0
