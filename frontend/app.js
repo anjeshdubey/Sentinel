@@ -1,6 +1,11 @@
 // Sentinel demo frontend — no build step, plain JS.
 //
-const API_BASE = "https://anjeshdubey--sentinel-demo-web.modal.run";
+// Auto-detects local dev: if the page itself is served from localhost/127.0.0.1,
+// point at the local backend (port 8000) instead of the deployed Modal backend.
+const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const API_BASE = isLocalHost
+  ? "http://localhost:8000"
+  : "https://anjeshdubey--sentinel-demo-web.modal.run";
 
 const grid = document.getElementById("scenario-grid");
 const tracePanel = document.getElementById("trace-panel");
