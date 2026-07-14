@@ -75,6 +75,49 @@ class TestRateLimiter:
 
         assert limiter.check("1.2.3.4").allowed
 
+    def test_short_window_boundary_is_inclusive_at_exact_window_elapsed(
+        self, fake_time: FakeMonotonic
+    ) -> None:
+        """Filter is `now - t <= SHORT_WINDOW_SECONDS` -- a request from
+        exactly SHORT_WINDOW_SECONDS ago must still count against the quota
+        (not yet reset). Distinguishes <= from a mutated <."""
+        limiter = guardrails.RateLimiter()
+
+        for _ in range(guardrails.RateLimiter.SHORT_WINDOW_MAX):
+            limiter.check("1.2.3.4")
+        assert not limiter.check("1.2.3.4").allowed
+
+        fake_time.advance(guardrails.RateLimiter.SHORT_WINDOW_SECONDS)
+
+        # Still exactly at the boundary -- old requests still count, so this
+        # should still be denied. One second later (existing test above) it
+        # resets.
+        assert not limiter.check("1.2.3.4").allowed
+
+    def test_long_window_boundary_is_inclusive_at_exact_window_elapsed(
+        self, fake_time: FakeMonotonic
+    ) -> None:
+        """Prune filter is `now - history[0] > LONG_WINDOW_SECONDS` -- the
+        oldest entry must NOT be pruned when it's exactly LONG_WINDOW_SECONDS
+        old (not yet strictly greater), so a 21st request at that instant is
+        still denied. One second later, pruning kicks in and it's allowed."""
+        limiter = guardrails.RateLimiter()
+        gap = 700  # > SHORT_WINDOW_SECONDS, so the short-window quota never trips
+
+        for _ in range(guardrails.RateLimiter.LONG_WINDOW_MAX):
+            fake_time.advance(gap)
+            assert limiter.check("5.5.5.5").allowed
+
+        # Oldest request landed at t=gap; time is now at t=gap*LONG_WINDOW_MAX.
+        elapsed_since_oldest = gap * (guardrails.RateLimiter.LONG_WINDOW_MAX - 1)
+        fake_time.advance(guardrails.RateLimiter.LONG_WINDOW_SECONDS - elapsed_since_oldest)
+
+        # Now == oldest request's timestamp + LONG_WINDOW_SECONDS exactly.
+        assert not limiter.check("5.5.5.5").allowed
+
+        fake_time.advance(1)
+        assert limiter.check("5.5.5.5").allowed
+
     def test_denies_after_long_window_max_even_when_spaced_out(
         self, fake_time: FakeMonotonic
     ) -> None:
@@ -216,6 +259,38 @@ class TestBudgetTracker:
         monkeypatch.setenv("FORCE_ENABLE", "true")
 
         assert tracker.is_exhausted() is False
+
+    def test_force_enable_is_case_insensitive(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Source does `.lower() == "true"` -- verify mixed-case values
+        (as a human might type in a Modal secret/env) are also honored."""
+        path = tmp_path / "budget.json"
+        tracker = guardrails.BudgetTracker(path=path)
+        path.write_text(
+            json.dumps(
+                {"month": tracker._current_month(), "cost_usd": guardrails.BUDGET_MONTHLY_CAP_USD}
+            )
+        )
+        monkeypatch.setenv("FORCE_ENABLE", "True")
+
+        assert tracker.is_exhausted() is False
+
+    def test_force_enable_rejects_non_true_values(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Only the literal "true" (any case) should bypass -- "1"/"yes" must
+        NOT accidentally disable the budget cap."""
+        path = tmp_path / "budget.json"
+        tracker = guardrails.BudgetTracker(path=path)
+        path.write_text(
+            json.dumps(
+                {"month": tracker._current_month(), "cost_usd": guardrails.BUDGET_MONTHLY_CAP_USD}
+            )
+        )
+        monkeypatch.setenv("FORCE_ENABLE", "1")
+
+        assert tracker.is_exhausted() is True
 
     def test_is_warning_at_threshold(self, tmp_path: Path) -> None:
         path = tmp_path / "budget.json"

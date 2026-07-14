@@ -116,7 +116,7 @@ def resolve_model(provider: str, model_name: str) -> str:
 
     Examples:
         resolve_model("anthropic", "claude-sonnet") -> "claude-sonnet-4-5-20250929"
-        resolve_model("gemini", "gemini-flash") -> "gemini-2.5-flash"
+        resolve_model("gemini", "gemini-flash") -> "gemini-flash-latest"
     """
     aliases = MODEL_ALIASES_BY_PROVIDER.get(provider, {})
     return aliases.get(model_name, model_name)

@@ -163,10 +163,15 @@ class ObservabilityConfig(BaseSettings):
 class Settings(BaseSettings):
     """Top-level Sentinel settings.
 
-    Load order (highest priority wins):
-    1. Environment variables (SENTINEL_MODEL__DEFAULT, etc.)
-    2. sentinel.yaml in project root
+    Load order (highest priority wins) when constructed via load_settings():
+    1. sentinel.yaml in project root (passed as constructor kwargs)
+    2. Environment variables (SENTINEL_MODEL__DEFAULT, etc.)
     3. Defaults defined here
+
+    Note: pydantic-settings gives constructor kwargs priority over env vars,
+    so for a field set in *both* sentinel.yaml and the environment, the yaml
+    value wins. See tests/unit/test_config.py::
+    test_yaml_takes_precedence_over_env_for_the_same_field.
 
     Anthropic auth is handled separately by the sentinel.gateway module
     (reads ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL).
@@ -187,12 +192,15 @@ class Settings(BaseSettings):
 
 
 def load_settings(config_path: Path | None = None) -> Settings:
-    """Load settings, merging sentinel.yaml (if present) under env vars.
+    """Load settings, merging sentinel.yaml (if present) with env vars.
 
     Load order (highest priority wins):
-    1. Environment variables (SENTINEL_MODEL__PROVIDER, etc.)
-    2. sentinel.yaml in project root (or config_path)
+    1. sentinel.yaml in project root (or config_path) — for whichever fields it sets
+    2. Environment variables (SENTINEL_MODEL__PROVIDER, etc.) — for fields yaml doesn't set
     3. Defaults defined on the Settings/ModelConfig classes
+
+    A field set in both sentinel.yaml and the environment resolves to the
+    yaml value (see Settings' docstring for why).
     """
     path = config_path or Path("sentinel.yaml")
     yaml_overrides: dict[str, Any] = {}

@@ -11,9 +11,10 @@
 # Auth: set ANTHROPIC_API_KEY / GEMINI_API_KEY / GROQ_API_KEY matching the
 # active provider (env var, not this file).
 #
-# Can still be overridden per-process via env vars, e.g.
+# For a field set only via env var and not here, e.g.
 # SENTINEL_MODEL__PROVIDER=gemini SENTINEL_MODEL__DEFAULT=gemini-flash
-# (env vars take priority over this file).
+# that env value applies. But for any field set in BOTH this file and the
+# environment, this file wins (see src/sentinel/config.py's docstring).
 
 model:
   provider: "gemini"

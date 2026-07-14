@@ -29,7 +29,7 @@ frontend/ (+ docs/ mirror) ──HTTP/SSE──▶ backend/ (FastAPI) ──▶ 
 
 | Path | What it does |
 |---|---|
-| `config.py` | `Settings` (pydantic-settings): model/output/retrieval/tools/observability config. `load_settings()` reads `sentinel.yaml`, merged under env vars (env wins). |
+| `config.py` | `Settings` (pydantic-settings): model/output/retrieval/tools/observability config. `load_settings()` reads `sentinel.yaml` and merges it with env vars — for a field set in both, **yaml wins** (pydantic-settings gives constructor kwargs priority over env sources). |
 | `gateway.py` | Multi-provider LLM client factory. `GatewayConfig.from_env(provider=...)` resolves provider + API key + model alias; `create_completion()` runs a structured (Instructor) completion against Anthropic, Gemini, or Groq behind one interface. |
 | `triage/engine.py` | `triage_alert()` — the pipeline entry point: hash alert → deterministic ID, retrieve runbook context, build prompt, call the LLM extractor, emit trace events, assemble the final `IncidentSummary`. |
 | `triage/extractor.py` | `extract_incident()` — calls `gateway.create_completion` against the `LLMIncidentExtraction` schema (title, severity, service, blast radius, confidence, etc.), which Instructor validates/fills. |
@@ -83,13 +83,16 @@ pip install -r requirements.txt  # includes pytest, pytest-asyncio
 pytest tests/
 ```
 
-182 unit tests currently pass, covering `config.py` (yaml/env merge precedence),
-`utils/hashing.py`, `models/` (`RawAlert`, `IncidentSummary`, enums), `ingestion/`
-(loader + service extraction), `retrieval/query_builder.py` (sanitization, service
-guessing), `tools/` (cache TTL/LRU/single-flight, JSON backends, `ToolProvider`
-routing/timeouts/caching), and `backend/guardrails.py` (rate limiting).
+212 unit tests currently pass, covering `config.py` (yaml/env merge precedence — for a
+field set in both sentinel.yaml and the environment, **yaml wins**), `gateway.py`
+(provider/model/API-key resolution incl. the provider-arg-over-env-var fix above, and
+`create_completion()`'s per-provider Instructor call shape), `utils/hashing.py`,
+`models/` (`RawAlert`, `IncidentSummary`, enums), `ingestion/` (loader + service
+extraction), `retrieval/query_builder.py` (sanitization, service guessing), `tools/`
+(cache TTL/LRU/single-flight, JSON backends, `ToolProvider` routing/timeouts/caching),
+and `backend/guardrails.py` (rate limiting, incl. sliding-window boundary cases).
 
-Not yet covered (per `TEST_PLAN.md`'s fuller plan, not yet implemented): `gateway.py`,
+Not yet covered (per `TEST_PLAN.md`'s fuller plan, not yet implemented):
 `triage/engine.py` and `extractor.py`, `retrieval/chunking.py`, `observability/trace.py`,
 and any functional/integration-tier tests (real FastAPI endpoints, real LLM/Qdrant calls).
 
