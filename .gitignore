@@ -8,6 +8,14 @@ __pycache__/
 dist/
 build/
 
+# Test / lint artifacts
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
 # Virtual environments
 .venv*/
 venv*/
