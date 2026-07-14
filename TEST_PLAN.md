@@ -1,9 +1,12 @@
 # Sentinel Test Plan
 
-Status: **no tests exist yet** (`tests/` is not created). `pyproject.toml` already
-declares the dev toolchain (`pytest`, `pytest-asyncio`, `pytest-cov`, `respx`) and
-two markers (`integration`, `slow`), so the test-runner contract is decided —
-this plan fills in what goes under `tests/`.
+Status (2026-07-14): **unit tier partially implemented** — 212 tests under `tests/unit/`
+covering `config.py`, `gateway.py` (incl. `create_completion` per-provider call shape),
+`utils/hashing.py`, `models/`, `ingestion/`, `retrieval/query_builder.py`, `tools/`, and
+`backend/guardrails.py`. Still not implemented: `triage/engine.py`/`extractor.py`,
+`retrieval/chunking.py`, `observability/trace.py`, and the entire functional/integration
+tiers described below. `pyproject.toml` already declares the dev toolchain (`pytest`,
+`pytest-asyncio`, `pytest-cov`, `respx`) and two markers (`integration`, `slow`).
 
 ## 1. Strategy
 

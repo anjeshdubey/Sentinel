@@ -148,6 +148,19 @@ class TestJsonDeploysProvider:
 
         assert [d.version for d in deploys] == ["v2"]
 
+    async def test_since_is_inclusive_of_exact_deployed_at_timestamp(
+        self, deploys_dir: Path
+    ) -> None:
+        """The filter is `deployed_at >= since` -- a deploy exactly at `since`
+        must be included, not excluded."""
+        provider = JsonDeploysProvider(deploys_dir)
+
+        deploys = await provider.get_recent_deploys(
+            "checkout", since=datetime(2026, 1, 1, tzinfo=UTC), limit=5
+        )
+
+        assert [d.version for d in deploys] == ["v2", "v1"]
+
     async def test_unknown_service_returns_empty_list(self, deploys_dir: Path) -> None:
         provider = JsonDeploysProvider(deploys_dir)
 
