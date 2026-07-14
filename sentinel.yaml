@@ -16,9 +16,13 @@
 # (env vars take priority over this file).
 
 model:
-  provider: "anthropic"
-  default: "claude-sonnet"
-  fallback: "claude-opus"
+  provider: "gemini"
+  default: "gemini-flash"
+  # provider: "anthropic"
+  # default: "claude-sonnet"
+  # provider: "groq"
+  # default: "<groq-model>"
+  fallback: "claude-sonnet"
   temperature: 0.0
   max_tokens: 1024
 
