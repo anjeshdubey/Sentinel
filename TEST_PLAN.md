@@ -1,12 +1,16 @@
 # Sentinel Test Plan
 
-Status (2026-07-14): **unit tier partially implemented** — 212 tests under `tests/unit/`
+Status (2026-07-14): **unit tier partially implemented** — 242 tests under `tests/unit/`
 covering `config.py`, `gateway.py` (incl. `create_completion` per-provider call shape),
-`utils/hashing.py`, `models/`, `ingestion/`, `retrieval/query_builder.py`, `tools/`, and
-`backend/guardrails.py`. Still not implemented: `triage/engine.py`/`extractor.py`,
-`retrieval/chunking.py`, `observability/trace.py`, and the entire functional/integration
-tiers described below. `pyproject.toml` already declares the dev toolchain (`pytest`,
-`pytest-asyncio`, `pytest-cov`, `respx`) and two markers (`integration`, `slow`).
+`utils/hashing.py`, `models/`, `ingestion/`, `retrieval/query_builder.py`, `tools/`,
+`backend/guardrails.py`, and `triage/` (`engine.py`, `extractor.py`, `prompts.py` — the
+LLM boundary is mocked at `extract_incident`/`create_completion`, never a real call).
+Still not implemented: `retrieval/chunking.py`, `observability/trace.py` (only exercised
+incidentally via other tests, not directly), and the entire functional/integration tiers
+described below. `pyproject.toml` already declares the dev toolchain (`pytest`,
+`pytest-asyncio`, `pytest-cov`, `respx`) and two markers (`integration`, `slow`); it now
+also declares `google-genai`/`groq` as core deps (previously only in `requirements.txt`,
+which meant `pip install -e ".[dev]"` alone left 2 gateway tests failing on a clean venv).
 
 ## 1. Strategy
 
