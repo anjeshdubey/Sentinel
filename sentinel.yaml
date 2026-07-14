@@ -1,8 +1,10 @@
 # Sentinel configuration
-# Override model via: SENTINEL_MODEL=claude-opus (short alias) or a full Anthropic model ID
-# Auth via: ANTHROPIC_API_KEY
+# Override provider via: SENTINEL_PROVIDER=anthropic | gemini | groq
+# Override model via: SENTINEL_MODEL=claude-opus (short alias) or a full provider model ID
+# Auth via: ANTHROPIC_API_KEY / GEMINI_API_KEY / GROQ_API_KEY (matching the active provider)
 
 model:
+  provider: "anthropic"
   default: "claude-sonnet"
   fallback: "claude-opus"
   temperature: 0.0

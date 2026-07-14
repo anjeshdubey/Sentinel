@@ -5,8 +5,16 @@ Deploy with:
 
     modal deploy backend/modal_app.py
 
-Requires:
+Requires (create once; all providers are wired in so switching is just an
+env var change + redeploy, no need to touch secrets again):
     modal secret create anthropic-api-key ANTHROPIC_API_KEY=sk-ant-...
+    modal secret create gemini-api-key GEMINI_API_KEY=...
+    modal secret create groq-api-key GROQ_API_KEY=...
+    modal secret create sentinel-provider SENTINEL_PROVIDER=anthropic
+
+To switch providers:
+    modal secret create sentinel-provider SENTINEL_PROVIDER=gemini --force
+    modal deploy backend/modal_app.py
 """
 
 from __future__ import annotations
@@ -26,6 +34,9 @@ image = (
         "slowapi>=0.1.9",
         "redis>=5.0.0",
         "anthropic>=0.40.0",
+        "google-genai>=1.0.0",
+        "jsonref>=1.1.0",
+        "groq>=0.11.0",
         "httpx>=0.27.0",
         "instructor>=1.5.0",
         "mcp[cli]>=1.20.0",
@@ -63,7 +74,12 @@ app = modal.App("sentinel-demo", image=image)
 
 
 @app.function(
-    secrets=[modal.Secret.from_name("anthropic-api-key")],
+    secrets=[
+        modal.Secret.from_name("anthropic-api-key"),
+        modal.Secret.from_name("gemini-api-key"),
+        modal.Secret.from_name("groq-api-key"),
+        modal.Secret.from_name("sentinel-provider"),
+    ],
     min_containers=0,
 )
 @modal.concurrent(max_inputs=10)
