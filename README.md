@@ -72,8 +72,26 @@ Plain HTML/JS, no build step. `docs/` is a **mirror of `frontend/`** used as the
 | `pyproject.toml` / `requirements.txt` | Package + dependency definitions. |
 | `scripts/index_seed_data.py` | One-off script that indexes `src/sentinel/data/runbooks/` and `past_incidents.jsonl` into the local Qdrant store (`data/qdrant/`). Already run — that directory is checked in with populated collections. |
 | `STATUS.md` | A stale snapshot from an earlier repo-trimming pass (references an old repo name/remote) — historical only, not current status. |
+| `TEST_PLAN.md` | The full intended test strategy (unit/functional/integration tiers). Only the unit tier is implemented so far — see Testing below. |
 
 No CI/CD is configured (no `.github/workflows`) — deployment to Modal and GitHub Pages is manual.
+
+## Testing
+
+```bash
+pip install -r requirements.txt  # includes pytest, pytest-asyncio
+pytest tests/
+```
+
+182 unit tests currently pass, covering `config.py` (yaml/env merge precedence),
+`utils/hashing.py`, `models/` (`RawAlert`, `IncidentSummary`, enums), `ingestion/`
+(loader + service extraction), `retrieval/query_builder.py` (sanitization, service
+guessing), `tools/` (cache TTL/LRU/single-flight, JSON backends, `ToolProvider`
+routing/timeouts/caching), and `backend/guardrails.py` (rate limiting).
+
+Not yet covered (per `TEST_PLAN.md`'s fuller plan, not yet implemented): `gateway.py`,
+`triage/engine.py` and `extractor.py`, `retrieval/chunking.py`, `observability/trace.py`,
+and any functional/integration-tier tests (real FastAPI endpoints, real LLM/Qdrant calls).
 
 ## Quick Start (Backend Development)
 
