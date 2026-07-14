@@ -1,0 +1,10 @@
+{
+  "source": "slack",
+  "timestamp": "2026-07-13T14:02:00Z",
+  "raw_payload": {
+    "text": "hey is anyone else seeing weird stuff with search? might just be me",
+    "channel": "#eng-general",
+    "user": "U12345"
+  },
+  "metadata": {}
+}
