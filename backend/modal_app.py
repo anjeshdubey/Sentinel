@@ -5,16 +5,24 @@ Deploy with:
 
     modal deploy backend/modal_app.py
 
-Requires (create once; all providers are wired in so switching is just an
-env var change + redeploy, no need to touch secrets again):
+Requires (create once; each provider's key only needs to exist so its
+container has the credential available -- it doesn't need to be "active"):
     modal secret create anthropic-api-key ANTHROPIC_API_KEY=sk-ant-...
     modal secret create gemini-api-key GEMINI_API_KEY=...
     modal secret create groq-api-key GROQ_API_KEY=...
     modal secret create sentinel-provider SENTINEL_PROVIDER=anthropic
 
-To switch providers:
-    modal secret create sentinel-provider SENTINEL_PROVIDER=gemini --force
+To switch providers, edit `model.provider` (and `model.default`) in
+sentinel.yaml at the repo root, then redeploy:
     modal deploy backend/modal_app.py
+
+The `sentinel-provider` secret (SENTINEL_PROVIDER env var) above is now a
+FALLBACK ONLY -- sentinel.yaml's model.provider is threaded explicitly
+through triage_alert() -> extract_incident() -> GatewayConfig.from_env(
+provider=...), which takes priority over this env var. See the "Switching
+LLM provider/model" section in the repo root README.md for the full picture
+(local + Modal), and that secret can be left as-is; it's harmless, just
+inert for provider selection.
 """
 
 from __future__ import annotations

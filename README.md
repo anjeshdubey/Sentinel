@@ -125,14 +125,81 @@ directory) and open it via `localhost` — it will auto-target your local backen
 
 ### Switching LLM provider/model
 
-Edit `model.provider` and `model.default` in `sentinel.yaml`, save, and the running
-dev server (`uvicorn --reload`) picks it up on the next request — no restart needed.
-Supported providers: `anthropic`, `gemini`, `groq`. Set the matching API key env var
-(`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `GROQ_API_KEY`) in the backend's environment.
+There's exactly one file to edit for this, whether you're running locally or on Modal:
+**`sentinel.yaml`** — set `model.provider` (`anthropic` | `gemini` | `groq`) and
+`model.default` (short alias, e.g. `claude-sonnet` / `gemini-flash` / `groq-llama`,
+or a full provider model ID). Other provider blocks are kept commented out in the
+file for quick swapping.
 
 `sentinel.yaml`'s `model.provider` is passed explicitly through
-`triage_alert()` → `extract_incident()` → `GatewayConfig.from_env(provider=...)`,
-so it takes priority over any `SENTINEL_PROVIDER` env var.
+`triage_alert()` → `extract_incident()` → `GatewayConfig.from_env(provider=...)`
+(`src/sentinel/gateway.py`), so it takes priority over any `SENTINEL_PROVIDER`
+env var. That env var (and the Modal `sentinel-provider` secret that sets it,
+see below) is now only a fallback used if `sentinel.yaml` doesn't specify a
+provider at all — editing the yaml is the supported way to switch.
+
+**Local:**
+1. Edit `model.provider`/`model.default` in `sentinel.yaml` and save.
+2. Make sure the matching API key is in the backend process's actual shell
+   environment (see Secrets management below — **`backend/.env` is not
+   auto-loaded**, you must export it yourself). The running dev server
+   (`uvicorn --reload`) re-reads `sentinel.yaml` per request via
+   `load_settings()`, so the yaml edit needs no restart; if you just added a
+   new env var to your shell, restart `uvicorn` so it inherits it.
+
+**Modal (deployed):**
+1. Edit `model.provider`/`model.default` in `sentinel.yaml` and commit.
+2. Make sure the matching provider's Modal secret exists (see Secrets
+   management below — all three are typically created once, up front).
+3. Redeploy: `modal deploy backend/modal_app.py` (from repo root). The new
+   `sentinel.yaml` is baked into the image via `add_local_dir`, so a redeploy
+   is required — there's no live-reload on Modal.
+
+### Secrets management
+
+Two completely separate stores, one per environment — there is no shared
+secrets file between them.
+
+**Local**: `backend/.env` (git-ignored, never committed) holds the keys as a
+reference file:
+```
+ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=...
+GROQ_API_KEY=...
+```
+**This file is not automatically loaded** — nothing in the codebase calls
+`load_dotenv()` or configures pydantic-settings' `env_file`, so simply having
+`backend/.env` populated does *not* put these into `os.environ`. You need to
+export them into the shell that runs `uvicorn` yourself, e.g.
+`export $(grep -v '^#' backend/.env | xargs)` before starting the server, or
+source them via your shell profile/direnv. (Worth fixing properly — adding a
+`load_dotenv()` call to `demo_app.py` — since `python-dotenv` is already an
+installed transitive dependency of `pydantic-settings`; not yet done.)
+
+Only the key matching the active `sentinel.yaml` provider is strictly required
+once it *is* in the environment; `GatewayConfig.from_env()` only reads the one
+key for whichever provider is selected (`src/sentinel/gateway.py`'s
+`API_KEY_ENV_VARS` map), so the other two keys being absent doesn't break
+anything.
+
+**Modal** (deployed backend): Modal has its own encrypted secret store, entirely
+separate from `.env` and the git repo — nothing provider-related is baked into
+the Docker image or checked into source. Created once via the Modal CLI:
+```bash
+modal secret create anthropic-api-key ANTHROPIC_API_KEY=sk-ant-...
+modal secret create gemini-api-key GEMINI_API_KEY=...
+modal secret create groq-api-key GROQ_API_KEY=...
+modal secret create sentinel-provider SENTINEL_PROVIDER=anthropic  # fallback only, see above
+```
+`backend/modal_app.py`'s `@app.function(secrets=[...])` declares all four by
+name; Modal injects each one's key/value pairs as environment variables into
+the container at runtime, so `os.environ["ANTHROPIC_API_KEY"]` etc. resolve
+inside Modal exactly like they do locally — `gateway.py` doesn't know or care
+which environment it's running in. All three provider secrets are typically
+created once up front (so any provider can be selected via `sentinel.yaml` +
+redeploy without re-touching Modal secrets); only `sentinel-provider` would
+ever need `--force` recreating, and only if you were relying on the fallback
+path rather than `sentinel.yaml`.
 
 ## Demo Deployment
 
