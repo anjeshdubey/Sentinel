@@ -45,6 +45,11 @@ dev = [
     "respx>=0.21.0",
     "fastapi>=0.115.0",
 ]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+    "pymdown-extensions>=10.0",
+]
 # Future dependencies (not installed yet)
 # api = ["uvicorn>=0.32.0"]
 # storage = ["sqlmodel>=0.0.22"]

@@ -1,0 +1,13 @@
+# Config for lycheeverse/lychee-action (dead-link checking on PRs).
+# Blocking by default -- broken links are objectively true/false, unlike a
+# lint style nit -- with narrow exclusions for known non-dead illustrative
+# URLs rather than a broad allowlist.
+
+exclude = [
+  "^http://localhost",
+  "^http://127\\.0\\.0\\.1",
+]
+
+# Internal doc cross-references (README.md <-> TEST_PLAN.md etc.) should be
+# checked; only network requests to the excludes above are skipped.
+include_verbatim = true

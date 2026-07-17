@@ -72,7 +72,7 @@ Plain HTML/JS, no build step. `docs/` is a **mirror of `frontend/`** used as the
 | `pyproject.toml` / `requirements.txt` | Package + dependency definitions. |
 | `scripts/index_seed_data.py` | One-off script that indexes `src/sentinel/data/runbooks/` and `past_incidents.jsonl` into the local Qdrant store (`data/qdrant/`). Already run — that directory is checked in with populated collections. |
 | `STATUS.md` | A stale snapshot from an earlier repo-trimming pass (references an old repo name/remote) — historical only, not current status. |
-| `TEST_PLAN.md` | The full intended test strategy (unit/functional/integration tiers). Only the unit tier is implemented so far — see Testing below. |
+| `TEST_PLAN.md` | The full intended test strategy (unit/functional/integration tiers). Unit and functional tiers are implemented; integration is not — see Testing below. |
 
 No CI/CD is configured (no `.github/workflows`) — deployment to Modal and GitHub Pages is manual.
 
@@ -83,18 +83,30 @@ pip install -r requirements.txt  # includes pytest, pytest-asyncio
 pytest tests/
 ```
 
-212 unit tests currently pass, covering `config.py` (yaml/env merge precedence — for a
-field set in both sentinel.yaml and the environment, **yaml wins**), `gateway.py`
-(provider/model/API-key resolution incl. the provider-arg-over-env-var fix above, and
-`create_completion()`'s per-provider Instructor call shape), `utils/hashing.py`,
-`models/` (`RawAlert`, `IncidentSummary`, enums), `ingestion/` (loader + service
-extraction), `retrieval/query_builder.py` (sanitization, service guessing), `tools/`
-(cache TTL/LRU/single-flight, JSON backends, `ToolProvider` routing/timeouts/caching),
-and `backend/guardrails.py` (rate limiting, incl. sliding-window boundary cases).
+277 tests currently pass: 251 unit + 26 functional (`pytest -m "not integration and not slow"`
+runs both tiers; nothing is skipped by default since the integration tier below doesn't
+exist as files yet, only as markers).
 
-Not yet covered (per `TEST_PLAN.md`'s fuller plan, not yet implemented):
-`triage/engine.py` and `extractor.py`, `retrieval/chunking.py`, `observability/trace.py`,
-and any functional/integration-tier tests (real FastAPI endpoints, real LLM/Qdrant calls).
+**Unit** (`tests/unit/`) covers `config.py` (yaml/env merge precedence — for a field set
+in both sentinel.yaml and the environment, **yaml wins**), `gateway.py` (provider/model/
+API-key resolution incl. the provider-arg-over-env-var fix above, and `create_completion()`'s
+per-provider Instructor call shape), `utils/hashing.py`, `models/` (`RawAlert`,
+`IncidentSummary`, enums), `ingestion/` (loader + service extraction),
+`retrieval/query_builder.py` (sanitization, service guessing), `tools/` (cache
+TTL/LRU/single-flight, JSON backends, `ToolProvider` routing/timeouts/caching),
+`backend/guardrails.py` (rate limiting, incl. sliding-window boundary cases), and
+`triage/engine.py`, `triage/extractor.py`, `triage/prompts.py`.
+
+**Functional** (`tests/functional/`) wires real internal code together with every external
+service (LLM API, Qdrant, embeddings) faked: `test_triage_engine_pipeline.py` runs the full
+`triage_alert()` pipeline against fixture alerts; `test_health_endpoint.py`,
+`test_scenarios_endpoint.py`, `test_triage_stream_endpoint.py` exercise the real FastAPI
+app via `httpx.ASGITransport`.
+
+Not yet covered: `retrieval/chunking.py`, `observability/trace.py`, and the
+integration tier (`-m integration`/`-m slow` — real LLM/Qdrant calls; markers are
+defined in `pyproject.toml` but no test files exist yet). See `TEST_PLAN.md` for the
+full strategy and coverage targets.
 
 ## Quick Start (Backend Development)
 
