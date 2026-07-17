@@ -123,4 +123,7 @@ def triage_alert(
         triage_timestamp=datetime.now(UTC),
         suggested_urgency=extraction.suggested_urgency,
         tags=extraction.tags,
+        proposed_remediation=extraction.proposed_remediation,
+        # requires_human_approval / approval_status keep their model defaults
+        # (True / "pending"); the LangGraph approval flow sets them (Week 5, PR 4).
     )

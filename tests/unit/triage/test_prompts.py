@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from sentinel.retrieval.models import RetrievedChunk, RunbookChunk
-from sentinel.triage.prompts import _render_runbook_excerpts, build_user_prompt
+from sentinel.triage.prompts import SYSTEM_PROMPT, _render_runbook_excerpts, build_user_prompt
 
 
 def _chunk(text: str, index: int = 0, total: int = 1, runbook_id: str = "rb-1") -> RetrievedChunk:
@@ -91,3 +91,18 @@ class TestBuildUserPrompt:
         )
 
         assert "ENRICHMENT_MARKER" in prompt
+
+    def test_user_prompt_grounds_remediation_in_runbooks(self) -> None:
+        prompt = build_user_prompt(
+            source="pagerduty", timestamp="t", raw_payload="{}", metadata="{}"
+        )
+
+        assert "proposed_remediation" in prompt
+        assert "runbook" in prompt.lower()
+
+
+class TestSystemPromptRemediation:
+    def test_system_prompt_instructs_grounded_remediation(self) -> None:
+        assert "proposed_remediation" in SYSTEM_PROMPT
+        # Must tell the model to fall back to null when runbooks don't support one.
+        assert "null" in SYSTEM_PROMPT.lower()

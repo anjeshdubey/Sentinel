@@ -254,3 +254,30 @@ class TestDeterminism:
         second = triage_alert(other_alert, settings, retriever=None)
 
         assert first.incident_id != second.incident_id
+
+
+class TestProposedRemediation:
+    def test_extraction_remediation_threaded_into_summary(
+        self, monkeypatch: pytest.MonkeyPatch, settings: Settings, alert: RawAlert
+    ) -> None:
+        _patch_extract_incident(
+            monkeypatch,
+            extraction=make_extraction(
+                proposed_remediation="Roll back deploy #4821 per runbook rb-1."
+            ),
+        )
+
+        incident = triage_alert(alert, settings, retriever=None)
+
+        assert incident.proposed_remediation == "Roll back deploy #4821 per runbook rb-1."
+
+    def test_approval_fields_use_model_defaults(
+        self, monkeypatch: pytest.MonkeyPatch, settings: Settings, alert: RawAlert
+    ) -> None:
+        """PR 1 engine leaves approval routing to the graph (PR 4)."""
+        _patch_extract_incident(monkeypatch)
+
+        incident = triage_alert(alert, settings, retriever=None)
+
+        assert incident.requires_human_approval is True
+        assert incident.approval_status == "pending"

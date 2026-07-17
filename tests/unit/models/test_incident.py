@@ -153,3 +153,28 @@ def test_title_over_max_length_rejected(valid_incident_kwargs: dict) -> None:
 
     with pytest.raises(ValidationError):
         IncidentSummary.model_validate(valid_incident_kwargs)
+
+
+class TestWorkflowFields:
+    """Week 5 human-in-the-loop fields — all defaulted for backward compat."""
+
+    def test_defaults_when_absent(self, valid_incident_kwargs: dict) -> None:
+        incident = IncidentSummary.model_validate(valid_incident_kwargs)
+
+        assert incident.proposed_remediation is None
+        assert incident.requires_human_approval is True
+        assert incident.approval_status == "pending"
+
+    def test_proposed_remediation_round_trips(self, valid_incident_kwargs: dict) -> None:
+        valid_incident_kwargs["proposed_remediation"] = "Roll back deploy #4821 per runbook rb-1."
+        incident = IncidentSummary.model_validate(valid_incident_kwargs)
+
+        assert incident.proposed_remediation == "Roll back deploy #4821 per runbook rb-1."
+
+    def test_approval_fields_round_trip(self, valid_incident_kwargs: dict) -> None:
+        valid_incident_kwargs["requires_human_approval"] = False
+        valid_incident_kwargs["approval_status"] = "auto"
+        incident = IncidentSummary.model_validate(valid_incident_kwargs)
+
+        assert incident.requires_human_approval is False
+        assert incident.approval_status == "auto"

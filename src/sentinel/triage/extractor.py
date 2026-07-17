@@ -59,6 +59,15 @@ class LLMIncidentExtraction(BaseModel):
     )
     suggested_urgency: Urgency = Field(description="Recommended response urgency")
     tags: list[str] = Field(default_factory=list, description="Classification tags")
+    proposed_remediation: str | None = Field(
+        default=None,
+        description=(
+            "A concrete remediation step for this incident, grounded in the "
+            "retrieved runbook excerpts provided in <retrieved_context>. Cite the "
+            "runbook's guidance rather than inventing steps. Leave null if the "
+            "runbooks do not clearly support a remediation for this symptom."
+        ),
+    )
 
 
 def extract_incident(
