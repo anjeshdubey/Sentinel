@@ -41,7 +41,7 @@ function renderScenarios(scenarios) {
       <p>${s.description}</p>
       <p class="why">${s.why_interesting}</p>
     `;
-    card.addEventListener("click", () => runScenario(s));
+    card.addEventListener("click", () => runScenario(s, card));
     grid.appendChild(card);
   }
 }
@@ -118,12 +118,19 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
-async function runScenario(scenario) {
+async function runScenario(scenario, card) {
   timeline.innerHTML = "";
   cacheBadge.hidden = true;
   traceTitle.textContent = `Reasoning trace — ${scenario.title}`;
   tracePanel.hidden = false;
   tracePanel.scrollIntoView({ behavior: "smooth" });
+
+  const allCards = grid.querySelectorAll(".scenario-card");
+  allCards.forEach((c) => (c.disabled = true));
+  if (card) {
+    card.classList.add("loading");
+    card.insertAdjacentHTML("beforeend", '<span class="spinner"></span>');
+  }
 
   try {
     const res = await fetch(`${API_BASE}/triage/stream`, {
@@ -177,6 +184,12 @@ async function runScenario(scenario) {
       "ERROR",
       `<pre>Could not reach the backend at ${API_BASE}. Is it running?\n${escapeHtml(String(e))}</pre>`
     );
+  } finally {
+    allCards.forEach((c) => (c.disabled = false));
+    if (card) {
+      card.classList.remove("loading");
+      card.querySelector(".spinner")?.remove();
+    }
   }
 }
 
