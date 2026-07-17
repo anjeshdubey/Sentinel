@@ -13,6 +13,7 @@ from unittest.mock import MagicMock, patch
 
 from sentinel.gateway import GatewayConfig
 from sentinel.triage.extractor import LLMIncidentExtraction, extract_incident
+from tests.unit.triage.fakes import make_extraction
 
 
 def _fake_config() -> GatewayConfig:
@@ -197,3 +198,19 @@ class TestCreateCompletionWiring:
             )
 
         assert result is sentinel_result
+
+
+class TestExtractionSchema:
+    """The LLM-filled schema now carries proposed_remediation (Week 5)."""
+
+    def test_proposed_remediation_defaults_to_none(self) -> None:
+        assert make_extraction().proposed_remediation is None
+
+    def test_proposed_remediation_round_trips(self) -> None:
+        extraction = make_extraction(
+            proposed_remediation="Restart checkout pods and drain the queue per runbook rb-1."
+        )
+
+        assert extraction.proposed_remediation == (
+            "Restart checkout pods and drain the queue per runbook rb-1."
+        )

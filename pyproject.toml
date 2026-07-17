@@ -33,6 +33,9 @@ rag = [
 observability = [
     "langfuse>=2.0.0",
 ]
+graph = [
+    "langgraph>=0.2.0",
+]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
@@ -44,7 +47,6 @@ dev = [
 ]
 # Future dependencies (not installed yet)
 # api = ["uvicorn>=0.32.0"]
-# graph = ["langgraph>=0.2.0"]
 # storage = ["sqlmodel>=0.0.22"]
 
 [project.scripts]

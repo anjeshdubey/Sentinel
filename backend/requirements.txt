@@ -3,4 +3,5 @@ sse-starlette>=2.0.0
 modal>=0.63.0
 slowapi>=0.1.9
 redis>=5.0.0
+langgraph>=0.2.0
 -e ../

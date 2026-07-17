@@ -91,6 +91,32 @@ class IncidentSummary(BaseModel):
         description="Freeform classification tags (e.g., 'database', 'latency', 'OOM')",
     )
 
+    # --- Human-in-the-loop workflow fields (Week 5) ---
+    # Defaulted so pre-Week-5 construction paths stay valid. The LangGraph
+    # approval flow sets requires_human_approval / approval_status; the
+    # extraction step supplies proposed_remediation.
+    proposed_remediation: str | None = Field(
+        default=None,
+        description=(
+            "Suggested remediation step, grounded in the retrieved runbook context. "
+            "None when the runbooks do not clearly support a remediation."
+        ),
+    )
+    requires_human_approval: bool = Field(
+        default=True,
+        description=(
+            "Whether this incident must be approved by a human before its "
+            "remediation is treated as actionable. Defaults to True (safe)."
+        ),
+    )
+    approval_status: str = Field(
+        default="pending",
+        description=(
+            "Approval state: 'pending' (awaiting human), 'auto' (auto-approved, "
+            "high confidence), 'approved', or 'rejected'."
+        ),
+    )
+
     @field_validator("title")
     @classmethod
     def title_not_empty(cls, v: str) -> str:
