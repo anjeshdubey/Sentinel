@@ -1,0 +1,17 @@
+{
+  // Starting permissive: these three rules are near-guaranteed to fire a wall
+  // of noise against README.md/TEST_PLAN.md's existing long-form prose style,
+  // not because that prose is wrong.
+  //
+  // NOTE: this config has not yet been run against real content (no Node
+  // available in the environment that authored it). The markdownlint job in
+  // .github/workflows/docs.yml ships as report-only (continue-on-error) for
+  // its first CI run on purpose -- see the actual violation count there,
+  // adjust this file if needed, then flip that job to blocking.
+  "globs": ["README.md", "TEST_PLAN.md", "engineering-docs/**/*.md"],
+  "config": {
+    "MD013": false, // line-length: README/TEST_PLAN use long unwrapped prose; wrapping = noise diff
+    "MD033": false, // inline HTML: GFM/MkDocs render <details>/<img> fine
+    "MD041": false  // first-line-must-be-h1: too strict for template/intro pages
+  }
+}
