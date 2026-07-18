@@ -15,16 +15,18 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from backend.guardrails import (
+    ALLOWED_SCENARIO_IDS,
+    budget_tracker,
+    is_valid_scenario_id,
+)
 from sentinel.config import load_settings
 from sentinel.models.raw_alert import RawAlert
 from sentinel.observability.trace import EventType, TraceCollector
 from sentinel.retrieval.bootstrap import build_retriever
-from sentinel.retrieval.query_builder import _guess_service
 from sentinel.tools.bootstrap import build_tool_provider
-from sentinel.tools.errors import ToolError
+from sentinel.tools.enrichment import gather_context
 from sentinel.triage.engine import triage_alert
-
-from backend.guardrails import ALLOWED_SCENARIO_IDS, budget_tracker, is_valid_scenario_id
 
 router = APIRouter()
 
@@ -153,78 +155,8 @@ async def _run_triage_and_collect_events(scenario_id: str) -> list[dict]:
     tool_provider = _get_tool_provider()
     retriever = _get_retriever()
 
-    service_hint = _guess_service(alert.raw_payload, alert.metadata)
-    enrichment_block = None
-    resolved_service = service_hint
-
-    # --- get_service_owner ---
-    if service_hint:
-        t0 = time.perf_counter()
-        emit("tool_call", {"tool": "get_service_owner", "args": {"service": service_hint}})
-        try:
-            owner = await tool_provider.get_service_owner(service_hint)
-        except ToolError:
-            owner = None
-        duration_ms = int((time.perf_counter() - t0) * 1000)
-        owner_result = (
-            {
-                "owner_team": owner.team,
-                "tier": owner.tier,
-                "oncall": owner.manager,
-                "escalation_channel": owner.escalation_channel,
-            }
-            if owner
-            else None
-        )
-        emit(
-            "tool_result",
-            {"tool": "get_service_owner", "result": owner_result, "duration_ms": duration_ms},
-        )
-        if owner:
-            resolved_service = owner.service
-
-        # --- get_recent_deploys ---
-        t0 = time.perf_counter()
-        emit(
-            "tool_call",
-            {"tool": "get_recent_deploys", "args": {"service": resolved_service, "hours": 2}},
-        )
-        since = alert.timestamp
-        from datetime import timedelta
-
-        try:
-            deploys = await tool_provider.get_recent_deploys(
-                resolved_service, since=since - timedelta(hours=2)
-            )
-        except ToolError:
-            deploys = ()
-        duration_ms = int((time.perf_counter() - t0) * 1000)
-        emit(
-            "tool_result",
-            {
-                "tool": "get_recent_deploys",
-                "result": [
-                    {
-                        "version": d.version,
-                        "deployed_at": d.deployed_at.isoformat(),
-                        "deployer": d.deployed_by,
-                        "commit_message": d.change_summary,
-                    }
-                    for d in deploys
-                ],
-                "duration_ms": duration_ms,
-            },
-        )
-
-        if owner or deploys:
-            lines = []
-            if owner:
-                lines.append(f"Service owner: {owner.team} (tier {owner.tier})")
-            if deploys:
-                lines.append("Recent deploys:")
-                for d in deploys:
-                    lines.append(f"- {d.version} at {d.deployed_at.isoformat()}: {d.change_summary}")
-            enrichment_block = "\n".join(lines)
+    enrichment = await gather_context(alert, tool_provider, on_event=emit)
+    enrichment_block = enrichment.enrichment_block
 
     # --- RAG + LLM via triage_alert (collector emits rag_query/rag_results) ---
     collector = TraceCollector(verbose=False)
@@ -256,13 +188,7 @@ async def _run_triage_and_collect_events(scenario_id: str) -> list[dict]:
                 },
             )
 
-    owner_team = None
-    try:
-        if resolved_service:
-            owner = await tool_provider.get_service_owner(resolved_service)
-            owner_team = owner.team if owner else None
-    except ToolError:
-        owner_team = None
+    owner_team = enrichment.owner_team
 
     emit(
         "diagnosis",
