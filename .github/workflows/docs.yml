@@ -102,7 +102,12 @@ jobs:
         env:
           BOT_COMMIT_PREFIX: "chore(docs): rebuild engineering docs"
         run: |
-          if git diff --quiet -- docs/engineering; then
+          # git diff --quiet only catches changes to already-tracked files;
+          # docs/engineering/ didn't exist before the first run of this job,
+          # so a brand-new build was entirely untracked and git diff silently
+          # reported no change. git status --porcelain also catches untracked
+          # new files, which is what a first-ever build produces.
+          if [ -z "$(git status --porcelain -- docs/engineering)" ]; then
             echo "docs/engineering/ already in sync"
             exit 0
           fi
