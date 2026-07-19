@@ -1,10 +1,10 @@
-"""Functional tests for POST /triage/stream.
+"""Functional tests for POST /triage/stream (Week 5: graph-driven).
 
-External services (LLM, Qdrant/retrieval, tool backends) are faked via
-monkeypatched demo_endpoints singletons and triage_alert -- these tests
-verify the endpoint's own wiring (validation, budget/rate guardrails,
-caching, SSE event translation), not the triage pipeline itself (covered
-in tests/unit/triage/ and tests/functional/test_triage_engine_pipeline.py).
+External services (LLM, retrieval, tool backends) are faked by monkeypatching
+demo_endpoints' singletons + sentinel.triage.nodes.diagnose_incident -- these
+verify the endpoint's own wiring (validation, budget/rate guardrails, caching,
+graph-driven SSE translation, the interrupt frame), not the triage pipeline
+itself (covered in tests/unit/triage/ and test_triage_engine_pipeline.py).
 """
 
 from __future__ import annotations
@@ -18,9 +18,14 @@ import pytest
 import backend.demo_endpoints as demo_endpoints
 import backend.guardrails as guardrails
 from sentinel.config import Settings
-from sentinel.models.incident import IncidentSummary
 from sentinel.tools.errors import ToolBackendError
-from tests.functional.fakes import FakeDeploy, FakeOwner, FakeToolProvider, make_fake_triage_alert
+from tests.functional.fakes import (
+    FakeDeploy,
+    FakeGraphRetriever,
+    FakeOwner,
+    FakeToolProvider,
+    make_summary,
+)
 
 
 def _parse_sse(text: str) -> list[tuple[str, dict]]:
@@ -39,39 +44,63 @@ def _parse_sse(text: str) -> list[tuple[str, dict]]:
     return frames
 
 
+def _node_starts(frames: list[tuple[str, dict]]) -> list[str]:
+    return [data["node"] for event, data in frames if event == "node_start"]
+
+
 @pytest.fixture
 def cache_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(demo_endpoints, "CACHE_DIR", tmp_path)
     return tmp_path
 
 
-@pytest.fixture
-def fake_incident(valid_incident_kwargs: dict) -> IncidentSummary:
-    return IncidentSummary.model_validate(
-        {**valid_incident_kwargs, "service": "checkout", "severity": "critical"}
-    )
-
-
-def _wire_fake_pipeline(
+def _wire_fake_graph(
     monkeypatch: pytest.MonkeyPatch,
-    incident: IncidentSummary,
-    tool_provider: FakeToolProvider,
-    emit_rag_events: bool = False,
+    *,
+    summary=None,
+    tool_provider: FakeToolProvider | None = None,
+    retriever=None,
+    diagnose_raises: Exception | None = None,
 ) -> None:
-    monkeypatch.setattr(demo_endpoints, "_get_settings", lambda: demo_endpoints.load_settings())
-    monkeypatch.setattr(demo_endpoints, "_get_retriever", lambda: object())
-    monkeypatch.setattr(demo_endpoints, "_get_tool_provider", lambda: tool_provider)
+    """Point the graph nodes at fakes: real Settings, a RAG-emitting retriever,
+    a fake tool provider, and a stubbed diagnosis (canned summary or raiser)."""
     monkeypatch.setattr(
-        demo_endpoints, "triage_alert", make_fake_triage_alert(incident, emit_rag_events)
+        demo_endpoints, "_get_settings", lambda: demo_endpoints.load_settings()
     )
+    monkeypatch.setattr(
+        demo_endpoints, "_get_retriever", lambda: retriever or FakeGraphRetriever()
+    )
+    monkeypatch.setattr(
+        demo_endpoints,
+        "_get_tool_provider",
+        lambda: tool_provider or FakeToolProvider(),
+    )
+
+    if diagnose_raises is not None:
+
+        def _raise(*args: object, **kwargs: object):
+            raise diagnose_raises
+
+        monkeypatch.setattr("sentinel.triage.nodes.diagnose_incident", _raise)
+    else:
+        canned = summary if summary is not None else make_summary()
+        monkeypatch.setattr(
+            "sentinel.triage.nodes.diagnose_incident", lambda *a, **k: canned
+        )
 
 
 class TestScenarioValidation:
-    async def test_invalid_scenario_id_returns_400(self, client: httpx.AsyncClient) -> None:
-        response = await client.post("/triage/stream", json={"scenario_id": "not-a-scenario"})
+    async def test_invalid_scenario_id_returns_400(
+        self, client: httpx.AsyncClient
+    ) -> None:
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "not-a-scenario"}
+        )
 
         assert response.status_code == 400
-        assert "checkout-deploy" in response.text  # allowlist echoed in the error detail
+        assert (
+            "checkout-deploy" in response.text
+        )  # allowlist echoed in the error detail
 
 
 class TestBudgetExhaustion:
@@ -80,7 +109,9 @@ class TestBudgetExhaustion:
     ) -> None:
         monkeypatch.setattr(guardrails.budget_tracker, "is_exhausted", lambda: True)
 
-        response = await client.post("/triage/stream", json={"scenario_id": "checkout-deploy"})
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "checkout-deploy"}
+        )
 
         assert response.status_code == 503
         body = response.json()
@@ -89,8 +120,11 @@ class TestBudgetExhaustion:
 
 
 class TestCacheHitPath:
-    async def test_replays_cached_events_verbatim_without_running_pipeline(
-        self, client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch, cache_dir: Path
+    async def test_replays_cached_events_verbatim_without_running_graph(
+        self,
+        client: httpx.AsyncClient,
+        monkeypatch: pytest.MonkeyPatch,
+        cache_dir: Path,
     ) -> None:
         seeded_events = [
             {"event": "alert", "data": {"source": "pagerduty"}},
@@ -99,14 +133,18 @@ class TestCacheHitPath:
         cache_path = demo_endpoints._cache_path("checkout-deploy")
         cache_path.write_text(json.dumps(seeded_events))
 
-        async def _should_not_be_called(scenario_id: str) -> list[dict]:
-            raise AssertionError("cache hit path must not run the real pipeline")
+        async def _should_not_be_called(
+            scenario_id: str, correlation_id: str
+        ) -> list[dict]:
+            raise AssertionError("cache hit path must not run the graph")
 
         monkeypatch.setattr(
-            demo_endpoints, "_run_triage_and_collect_events", _should_not_be_called
+            demo_endpoints, "_run_graph_and_collect_events", _should_not_be_called
         )
 
-        response = await client.post("/triage/stream", json={"scenario_id": "checkout-deploy"})
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "checkout-deploy"}
+        )
 
         assert response.status_code == 200
         frames = _parse_sse(response.text)
@@ -115,18 +153,25 @@ class TestCacheHitPath:
         assert frames[1:] == [("alert", {"source": "pagerduty"}), ("done", {})]
 
 
-class TestCacheMissPath:
-    async def test_runs_pipeline_and_emits_full_event_sequence(
+class TestCacheMissAutoPath:
+    async def test_high_confidence_run_emits_full_node_sequence(
         self,
         client: httpx.AsyncClient,
         monkeypatch: pytest.MonkeyPatch,
         cache_dir: Path,
-        fake_incident: IncidentSummary,
     ) -> None:
-        tool_provider = FakeToolProvider(owner=FakeOwner(), deploys=[FakeDeploy()])
-        _wire_fake_pipeline(monkeypatch, fake_incident, tool_provider, emit_rag_events=True)
+        summary = make_summary(
+            confidence=0.95, proposed_remediation="Roll back deploy #4821."
+        )
+        _wire_fake_graph(
+            monkeypatch,
+            summary=summary,
+            tool_provider=FakeToolProvider(owner=FakeOwner(), deploys=[FakeDeploy()]),
+        )
 
-        response = await client.post("/triage/stream", json={"scenario_id": "checkout-deploy"})
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "checkout-deploy"}
+        )
 
         assert response.status_code == 200
         frames = _parse_sse(response.text)
@@ -135,32 +180,48 @@ class TestCacheMissPath:
         assert event_types == [
             "start",
             "alert",
+            "node_start",  # ingest
+            "node_start",  # enrich
             "tool_call",
             "tool_result",
             "tool_call",
             "tool_result",
-            "llm_call",
+            "node_start",  # retrieve
             "rag_query",
             "rag_results",
+            "node_start",  # diagnose
+            "llm_call",
             "diagnosis",
+            "node_start",  # finalize
+            "finalized",
             "done",
+        ]
+        assert _node_starts(frames) == [
+            "ingest",
+            "enrich",
+            "retrieve",
+            "diagnose",
+            "finalize",
         ]
         assert frames[0][1]["cache_hit"] is False
 
         diagnosis = dict(frames)["diagnosis"]
-        assert diagnosis["severity"] == fake_incident.severity.value
-        assert diagnosis["service"] == fake_incident.service
-        assert diagnosis["confidence"] == fake_incident.confidence
+        assert diagnosis["severity"] == summary.severity.value
+        assert diagnosis["service"] == summary.service
+        assert diagnosis["confidence"] == summary.confidence
+        assert diagnosis["assigned_team"] == "team-checkout"
+
+        finalized = dict(frames)["finalized"]
+        assert finalized["approval_status"] == "auto"
+        assert finalized["requires_human_approval"] is False
 
     async def test_result_is_written_to_cache(
         self,
         client: httpx.AsyncClient,
         monkeypatch: pytest.MonkeyPatch,
         cache_dir: Path,
-        fake_incident: IncidentSummary,
     ) -> None:
-        tool_provider = FakeToolProvider(owner=FakeOwner(), deploys=[])
-        _wire_fake_pipeline(monkeypatch, fake_incident, tool_provider)
+        _wire_fake_graph(monkeypatch, tool_provider=FakeToolProvider(owner=FakeOwner()))
 
         await client.post("/triage/stream", json={"scenario_id": "checkout-deploy"})
 
@@ -174,39 +235,75 @@ class TestCacheMissPath:
         client: httpx.AsyncClient,
         monkeypatch: pytest.MonkeyPatch,
         cache_dir: Path,
-        fake_incident: IncidentSummary,
     ) -> None:
-        """The slack-vague fixture has no clean service hint in its payload/
-        metadata for _guess_service's structured-field checks and no known
-        service substring, so the tool_call branch should be skipped."""
-        tool_provider = FakeToolProvider(owner=None, deploys=[])
-        _wire_fake_pipeline(monkeypatch, fake_incident, tool_provider)
+        """slack-vague has no clean service hint, so gather_context short-circuits
+        before any tool call — but the pipeline still streams the other steps."""
+        _wire_fake_graph(
+            monkeypatch, tool_provider=FakeToolProvider(owner=None, deploys=[])
+        )
 
-        response = await client.post("/triage/stream", json={"scenario_id": "slack-vague"})
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "slack-vague"}
+        )
 
         frames = _parse_sse(response.text)
         event_types = [f[0] for f in frames]
         assert "tool_call" not in event_types
+        assert "diagnosis" in event_types
+
+
+class TestCacheMissHumanGatePath:
+    async def test_low_confidence_run_pauses_with_interrupt(
+        self,
+        client: httpx.AsyncClient,
+        monkeypatch: pytest.MonkeyPatch,
+        cache_dir: Path,
+    ) -> None:
+        summary = make_summary(
+            confidence=0.4, proposed_remediation="Roll back deploy #4821."
+        )
+        _wire_fake_graph(
+            monkeypatch,
+            summary=summary,
+            tool_provider=FakeToolProvider(owner=FakeOwner(), deploys=[FakeDeploy()]),
+        )
+
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "checkout-deploy"}
+        )
+
+        assert response.status_code == 200
+        frames = _parse_sse(response.text)
+        event_types = [f[0] for f in frames]
+
+        assert event_types[-1] == "interrupt"
+        assert "finalized" not in event_types
+        assert "done" not in event_types
+
+        interrupt = dict(frames)["interrupt"]
+        assert interrupt["correlation_id"].startswith("checkout-deploy:")
+        assert interrupt["proposed_remediation"] == "Roll back deploy #4821."
+        assert interrupt["assigned_team"] == "team-checkout"
 
 
 class TestToolErrorsFailOpen:
-    """The endpoint catches ToolError at each tool call site and degrades
-    gracefully (result=None / owner_team=None) rather than 500ing --
-    enrichment is best-effort, never a hard dependency."""
-
     async def test_owner_tool_error_yields_none_result_and_no_assigned_team(
         self,
         client: httpx.AsyncClient,
         monkeypatch: pytest.MonkeyPatch,
         cache_dir: Path,
-        fake_incident: IncidentSummary,
     ) -> None:
-        tool_provider = FakeToolProvider(
-            deploys=[FakeDeploy()], owner_raises=ToolBackendError("ownership", "boom")
+        _wire_fake_graph(
+            monkeypatch,
+            tool_provider=FakeToolProvider(
+                deploys=[FakeDeploy()],
+                owner_raises=ToolBackendError("ownership", "boom"),
+            ),
         )
-        _wire_fake_pipeline(monkeypatch, fake_incident, tool_provider)
 
-        response = await client.post("/triage/stream", json={"scenario_id": "checkout-deploy"})
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "checkout-deploy"}
+        )
 
         assert response.status_code == 200
         frames = dict(_parse_sse(response.text))
@@ -217,14 +314,17 @@ class TestToolErrorsFailOpen:
         client: httpx.AsyncClient,
         monkeypatch: pytest.MonkeyPatch,
         cache_dir: Path,
-        fake_incident: IncidentSummary,
     ) -> None:
-        tool_provider = FakeToolProvider(
-            owner=FakeOwner(), deploys_raises=ToolBackendError("deploys", "boom")
+        _wire_fake_graph(
+            monkeypatch,
+            tool_provider=FakeToolProvider(
+                owner=FakeOwner(), deploys_raises=ToolBackendError("deploys", "boom")
+            ),
         )
-        _wire_fake_pipeline(monkeypatch, fake_incident, tool_provider)
 
-        response = await client.post("/triage/stream", json={"scenario_id": "checkout-deploy"})
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "checkout-deploy"}
+        )
 
         assert response.status_code == 200
         frames = _parse_sse(response.text)
@@ -237,20 +337,17 @@ class TestToolErrorsFailOpen:
 
 
 class TestExecutionFailure:
-    async def test_pipeline_exception_returns_500_and_does_not_cache(
-        self, client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch, cache_dir: Path
+    async def test_graph_exception_returns_500_and_does_not_cache(
+        self,
+        client: httpx.AsyncClient,
+        monkeypatch: pytest.MonkeyPatch,
+        cache_dir: Path,
     ) -> None:
-        tool_provider = FakeToolProvider()
-        monkeypatch.setattr(demo_endpoints, "_get_settings", lambda: demo_endpoints.load_settings())
-        monkeypatch.setattr(demo_endpoints, "_get_retriever", lambda: object())
-        monkeypatch.setattr(demo_endpoints, "_get_tool_provider", lambda: tool_provider)
+        _wire_fake_graph(monkeypatch, diagnose_raises=RuntimeError("LLM call failed"))
 
-        def _raising_triage_alert(*args: object, **kwargs: object) -> None:
-            raise RuntimeError("LLM call failed")
-
-        monkeypatch.setattr(demo_endpoints, "triage_alert", _raising_triage_alert)
-
-        response = await client.post("/triage/stream", json={"scenario_id": "checkout-deploy"})
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "checkout-deploy"}
+        )
 
         assert response.status_code == 500
         body = response.json()
@@ -275,16 +372,15 @@ class TestRateLimiting:
     async def test_sixth_request_in_short_window_is_denied(
         self, client: httpx.AsyncClient
     ) -> None:
-        """Rate limiting runs in middleware before route validation, so an
-        invalid scenario_id still counts against the quota -- exercising it
-        doesn't require mocking the pipeline."""
         for _ in range(5):
             response = await client.post(
                 "/triage/stream", json={"scenario_id": "not-a-scenario"}
             )
             assert response.status_code == 400
 
-        response = await client.post("/triage/stream", json={"scenario_id": "not-a-scenario"})
+        response = await client.post(
+            "/triage/stream", json={"scenario_id": "not-a-scenario"}
+        )
 
         assert response.status_code == 429
         body = response.json()
@@ -293,8 +389,12 @@ class TestRateLimiting:
 
 
 class TestCors:
-    async def test_cors_header_present_on_response(self, client: httpx.AsyncClient) -> None:
-        response = await client.get("/health", headers={"Origin": "https://example.com"})
+    async def test_cors_header_present_on_response(
+        self, client: httpx.AsyncClient
+    ) -> None:
+        response = await client.get(
+            "/health", headers={"Origin": "https://example.com"}
+        )
 
         assert response.headers.get("access-control-allow-origin") == "*"
 

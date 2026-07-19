@@ -16,6 +16,7 @@ from collections.abc import AsyncIterator
 import httpx
 import pytest
 
+import backend.demo_endpoints as demo_endpoints
 import backend.guardrails as guardrails
 from backend.demo_app import app
 
@@ -23,6 +24,16 @@ from backend.demo_app import app
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(guardrails.rate_limiter, "_requests", defaultdict(deque))
+
+
+@pytest.fixture(autouse=True)
+def _reset_graph_checkpointer() -> None:
+    """Fresh in-process MemorySaver per test so paused threads never leak across
+    tests. Cheap to rebuild (unlike the settings/retriever singletons, which are
+    intentionally left intact)."""
+    demo_endpoints._checkpointer = None
+    yield
+    demo_endpoints._checkpointer = None
 
 
 @pytest.fixture(autouse=True)
@@ -36,5 +47,7 @@ def _budget_not_exhausted(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 async def client() -> AsyncIterator[httpx.AsyncClient]:
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as ac:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver"
+    ) as ac:
         yield ac

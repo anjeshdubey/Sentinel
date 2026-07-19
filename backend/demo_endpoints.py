@@ -1,13 +1,24 @@
-"""Demo API endpoints: /scenarios, /triage/stream, /health.
+"""Demo API endpoints: /scenarios, /triage/stream, /triage/resume, /health.
 
-Imports from the sentinel package (triage engine, tools, retrieval) but adds
+Imports from the sentinel package (triage graph, tools, retrieval) but adds
 nothing to it — this is the public-demo composition layer only.
+
+Week 5: /triage/stream drives the LangGraph triage graph. High-confidence runs
+stream straight through to `done`; low-confidence runs pause at the human gate
+and stream an `interrupt` frame carrying a `correlation_id`. The frontend POSTs
+that id back to /triage/resume with the human decision, which finalizes the run.
+
+The compiled graph's MemorySaver checkpointer is an in-process singleton so a
+paused run is resumable only within the same warm process (Modal pins one warm
+container for the demo; a persistent checkpointer is Week 9). When the paused
+thread can't be found, /triage/resume returns 409 "session expired" rather than
+500 so the demo degrades gracefully.
 """
 
 from __future__ import annotations
 
 import json
-import time
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -22,11 +33,8 @@ from backend.guardrails import (
 )
 from sentinel.config import load_settings
 from sentinel.models.raw_alert import RawAlert
-from sentinel.observability.trace import EventType, TraceCollector
 from sentinel.retrieval.bootstrap import build_retriever
 from sentinel.tools.bootstrap import build_tool_provider
-from sentinel.tools.enrichment import gather_context
-from sentinel.triage.engine import triage_alert
 
 router = APIRouter()
 
@@ -75,11 +83,14 @@ FIXTURE_FILES = {
     "past-incident-match": "past-incident-match.json",
 }
 
+VALID_DECISIONS = frozenset({"approve", "reject"})
+
 # --- Lazily-built shared singletons (settings, retriever, tool provider) ----
 
 _settings = None
 _retriever = None
 _tool_provider = None
+_checkpointer = None
 
 
 def _get_settings():
@@ -109,13 +120,55 @@ def _get_tool_provider():
     return _tool_provider
 
 
+def _get_checkpointer():
+    """In-process MemorySaver shared across per-request graph builds so a paused
+    /triage/stream run is resumable by /triage/resume within the same process."""
+    global _checkpointer
+    if _checkpointer is None:
+        from langgraph.checkpoint.memory import MemorySaver
+
+        _checkpointer = MemorySaver()
+    return _checkpointer
+
+
+def _build_request_graph(emit):
+    """Build a compiled graph bound to a per-request event sink, sharing the
+    process-wide checkpointer so run/resume see the same threads."""
+    from sentinel.triage.graph import build_graph
+    from sentinel.triage.nodes import TriageDeps
+
+    deps = TriageDeps(
+        settings=_get_settings(),
+        retriever=_get_retriever(),
+        tool_provider=_get_tool_provider(),
+        emit=emit,
+    )
+    return deps, build_graph(deps, checkpointer=_get_checkpointer())
+
+
 class TriageRequest(BaseModel):
     scenario_id: str
+
+
+class ResumeRequest(BaseModel):
+    scenario_id: str
+    correlation_id: str
+    decision: str
+    note: str | None = None
+
+
+class _SessionExpired(Exception):
+    """The paused thread for a resume is gone (process restart / multi-container)."""
 
 
 def _cache_path(scenario_id: str) -> Path:
     date_str = datetime.now(UTC).strftime("%Y-%m-%d")
     return CACHE_DIR / f"{scenario_id}-{date_str}.json"
+
+
+def _resume_cache_path(scenario_id: str, decision: str) -> Path:
+    date_str = datetime.now(UTC).strftime("%Y-%m-%d")
+    return CACHE_DIR / f"{scenario_id}-{decision}-{date_str}.json"
 
 
 def _load_fixture(scenario_id: str) -> dict:
@@ -127,8 +180,16 @@ def _sse_frame(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
 
-async def _run_triage_and_collect_events(scenario_id: str) -> list[dict]:
-    """Execute real triage for a scenario, returning the ordered SSE event list."""
+async def _run_graph_and_collect_events(
+    scenario_id: str, correlation_id: str
+) -> list[dict]:
+    """Drive the triage graph for a scenario, returning the ordered SSE events.
+
+    Ends with `done` when the run auto-approves, or `interrupt` (carrying the
+    correlation_id) when it pauses at the human gate.
+    """
+    from sentinel.triage.engine import run_triage_graph
+
     events: list[dict] = []
 
     def emit(event: str, data: dict) -> None:
@@ -143,7 +204,6 @@ async def _run_triage_and_collect_events(scenario_id: str) -> list[dict]:
             "payload": fixture["raw_payload"],
         },
     )
-
     alert = RawAlert(
         source=fixture["source"],
         timestamp=fixture["timestamp"],
@@ -151,61 +211,57 @@ async def _run_triage_and_collect_events(scenario_id: str) -> list[dict]:
         metadata=fixture.get("metadata", {}),
     )
 
-    settings = _get_settings()
-    tool_provider = _get_tool_provider()
-    retriever = _get_retriever()
-
-    enrichment = await gather_context(alert, tool_provider, on_event=emit)
-    enrichment_block = enrichment.enrichment_block
-
-    # --- RAG + LLM via triage_alert (collector emits rag_query/rag_results) ---
-    collector = TraceCollector(verbose=False)
-
-    emit("llm_call", {"model": settings.model.default})
-
-    t_total = time.perf_counter()
-    summary = triage_alert(
-        alert,
-        settings,
-        retriever=retriever,
-        enrichment_block=enrichment_block,
-        collector=collector,
-    )
-    total_duration_ms = int((time.perf_counter() - t_total) * 1000)
-
-    # Translate collected engine events into rag_query / rag_results SSE events.
-    rag_query_text = None
-    for ev in collector.events:
-        if ev.event_type == EventType.RAG_QUERY_STARTED:
-            rag_query_text = ev.metadata.get("query")
-            emit("rag_query", {"query": rag_query_text})
-        elif ev.event_type == EventType.RAG_QUERY_COMPLETED:
-            emit(
-                "rag_results",
-                {
-                    "chunks_returned": ev.metadata.get("chunks_returned"),
-                    "duration_ms": ev.metadata.get("latency_ms"),
-                },
-            )
-
-    owner_team = enrichment.owner_team
-
-    emit(
-        "diagnosis",
-        {
-            "severity": summary.severity.value,
-            "service": summary.service,
-            "suspected_root_cause": summary.suspected_root_cause,
-            "assigned_team": owner_team,
-            "confidence": summary.confidence,
-            "recommended_action": summary.suggested_urgency.value,
-            "completion_tokens": None,
-            "total_duration_ms": total_duration_ms,
-        },
+    deps, graph = _build_request_graph(emit)
+    _, result = await run_triage_graph(
+        alert, deps, correlation_id=correlation_id, graph=graph
     )
 
+    if result.interrupted:
+        summary = result.summary
+        emit(
+            "interrupt",
+            {
+                "correlation_id": correlation_id,
+                "title": summary.title,
+                "severity": summary.severity.value,
+                "service": summary.service,
+                "confidence": summary.confidence,
+                "suspected_root_cause": summary.suspected_root_cause,
+                "proposed_remediation": summary.proposed_remediation,
+                "assigned_team": result.owner_team,
+            },
+        )
+    else:
+        emit("done", {})
+
+    return events
+
+
+async def _resume_graph_and_collect_events(
+    correlation_id: str, decision: str, note: str | None
+) -> list[dict]:
+    """Resume a paused run with the human decision, returning the SSE events.
+
+    Raises _SessionExpired when no paused thread matches correlation_id.
+    """
+    from sentinel.triage.engine import resume_triage_graph
+
+    events: list[dict] = []
+
+    def emit(event: str, data: dict) -> None:
+        events.append({"event": event, "data": data})
+
+    _deps, graph = _build_request_graph(emit)
+    config = {"configurable": {"thread_id": correlation_id}}
+    snapshot = graph.get_state(config)
+    # An unknown or already-finalized thread has no pending next node.
+    if not snapshot.next:
+        raise _SessionExpired
+
+    await resume_triage_graph(
+        graph, correlation_id=correlation_id, human_decision=decision, human_note=note
+    )
     emit("done", {})
-
     return events
 
 
@@ -250,8 +306,9 @@ async def triage_stream(payload: TriageRequest, request: Request) -> StreamingRe
     if cache_hit:
         events = json.loads(cache_path.read_text())
     else:
+        correlation_id = f"{scenario_id}:{uuid.uuid4().hex}"
         try:
-            events = await _run_triage_and_collect_events(scenario_id)
+            events = await _run_graph_and_collect_events(scenario_id, correlation_id)
         except Exception as e:
             raise HTTPException(
                 status_code=500,
@@ -268,6 +325,66 @@ async def triage_stream(payload: TriageRequest, request: Request) -> StreamingRe
             "start",
             {
                 "scenario_id": scenario_id,
+                "cache_hit": cache_hit,
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
+        )
+        for ev in events:
+            yield _sse_frame(ev["event"], ev["data"])
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.post("/triage/resume")
+async def triage_resume(payload: ResumeRequest, request: Request) -> StreamingResponse:
+    scenario_id = payload.scenario_id
+
+    if not is_valid_scenario_id(scenario_id):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid scenario_id. Must be one of: {sorted(ALLOWED_SCENARIO_IDS)}",
+        )
+
+    decision = payload.decision.strip().lower()
+    if decision not in VALID_DECISIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid decision. Must be one of: {sorted(VALID_DECISIONS)}",
+        )
+
+    cache_path = _resume_cache_path(scenario_id, decision)
+    cache_hit = cache_path.exists()
+
+    if cache_hit:
+        events = json.loads(cache_path.read_text())
+    else:
+        try:
+            events = await _resume_graph_and_collect_events(
+                payload.correlation_id, decision, payload.note
+            )
+        except _SessionExpired as e:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "error": "session_expired",
+                    "message": "Approval session expired — re-run the scenario.",
+                    "correlation_id": payload.correlation_id,
+                },
+            ) from e
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail={"error": "resume_failed", "message": f"Resume failed: {e}"},
+            ) from e
+        cache_path.write_text(json.dumps(events, default=str))
+
+    async def event_generator():
+        yield _sse_frame(
+            "start",
+            {
+                "scenario_id": scenario_id,
+                "resumed": True,
+                "decision": decision,
                 "cache_hit": cache_hit,
                 "timestamp": datetime.now(UTC).isoformat(),
             },
