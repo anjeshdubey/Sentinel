@@ -56,16 +56,18 @@ def route_on_confidence(state: TriageState) -> str:
     return APPROVE_NODE if needs_human_review(state["summary"]) else "finalize"
 
 
-def build_graph(deps: TriageDeps):
-    """Build and compile the triage graph with an in-process checkpointer.
+def build_graph(deps: TriageDeps, checkpointer=None):
+    """Build and compile the triage graph with a checkpointer.
 
     Args:
         deps: Runtime dependencies bound into every node.
+        checkpointer: Optional checkpointer to compile with. Pass a shared
+            MemorySaver so freshly-built graph instances (e.g. one per SSE
+            request, each with its own `deps.emit`) resolve the same paused
+            thread on resume. Omit for a private per-graph MemorySaver.
 
     Returns:
-        A compiled graph with a MemorySaver checkpointer and
-        ``interrupt_before=["approve"]``. Reuse a single instance across a
-        run/resume pair so the in-memory checkpoint is shared.
+        A compiled graph with a checkpointer and ``interrupt_before=["approve"]``.
     """
     builder = StateGraph(TriageState)
 
@@ -89,6 +91,6 @@ def build_graph(deps: TriageDeps):
     builder.add_edge("finalize", END)
 
     return builder.compile(
-        checkpointer=MemorySaver(),
+        checkpointer=checkpointer if checkpointer is not None else MemorySaver(),
         interrupt_before=[APPROVE_NODE],
     )
