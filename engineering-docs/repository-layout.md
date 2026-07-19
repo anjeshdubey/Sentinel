@@ -10,10 +10,10 @@ flowchart TD
     ROOT --> ENGDOCS["engineering-docs/<br/>this site's source"]
     ROOT --> ROOTFILES["sentinel.yaml, pyproject.toml,<br/>README.md, TEST_PLAN.md"]
 
-    SRC --> TRIAGE_D["triage/"]
+    SRC --> TRIAGE_D["triage/<br/>engine, extractor, graph, nodes"]
     SRC --> RETRIEVAL_D["retrieval/"]
-    SRC --> TOOLS_D["tools/"]
-    SRC --> MODELS_D["models/"]
+    SRC --> TOOLS_D["tools/<br/>provider, enrichment"]
+    SRC --> MODELS_D["models/<br/>incident, graph_state"]
     SRC --> OBS_D["observability/"]
 ```
 
@@ -21,7 +21,7 @@ flowchart TD
 
 | Directory | Purpose |
 |---|---|
-| `src/sentinel/` | Core engine — installable package with the triage pipeline, RAG retrieval, and tool-calling layer, independent of the FastAPI/Modal wrapper. |
+| `src/sentinel/` | Core engine — installable package with the triage pipeline (`triage/engine.py`), the LangGraph human-in-the-loop graph (`triage/graph.py`, `triage/nodes.py`, `models/graph_state.py`), RAG retrieval, and the tool-calling / enrichment layer, independent of the FastAPI/Modal wrapper. |
 | `backend/` | Plain FastAPI demo API — `demo_app.py` (app + guardrails middleware), `demo_endpoints.py` (routes), `modal_app.py` (serverless wrapper). |
 | `frontend/` + `docs/` | Static HTML/JS demo UI, no build step. `frontend/` is the working copy; `docs/` is a generated GitHub Pages mirror — see [Architecture](architecture.md#deployment-targets). |
 | `tests/` | `unit/` (isolated module tests) + `functional/` (real FastAPI app + full pipeline, external services faked) — see [Testing Strategy](testing.md). |

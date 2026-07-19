@@ -9,8 +9,8 @@ pytest -m "not integration and not slow"
 
 | Tier | Location | What it covers | Status |
 |---|---|---|---|
-| Unit | `tests/unit/` | Isolated modules — config merge precedence, gateway provider resolution, models, ingestion, retrieval query building, tools, guardrails, the triage pipeline's individual stages. | Implemented (251 tests) |
-| Functional | `tests/functional/` | Real internal code wired together, external services (LLM, Qdrant, embeddings) faked — full `triage_alert()` pipeline, real FastAPI endpoints via `httpx.ASGITransport`. | Implemented (26 tests) |
+| Unit | `tests/unit/` | Isolated modules — config merge precedence, gateway provider resolution, models, ingestion, retrieval query building, tools + enrichment, guardrails, the triage pipeline's individual stages, and the LangGraph layer (each node's state delta, confidence routing, interrupt/resume, the auto/approved/rejected finalize outcomes). | Implemented (300 tests) |
+| Functional | `tests/functional/` | Real internal code wired together, external services (LLM, Qdrant, embeddings) faked — full `triage_alert()` pipeline, and the real FastAPI endpoints via `httpx.ASGITransport` including graph-driven `/triage/stream` (with the `interrupt` frame) and `/triage/resume` (approve / reject / cached replay / 409 session-expired). | Implemented (33 tests) |
 | Integration | `-m integration` / `-m slow` | Real LLM API calls, real Qdrant, real model downloads. Not run by default; each test should `pytest.skip` cleanly if its precondition (API key, `rag` extras) isn't met. | Markers defined in `pyproject.toml`; no test files yet |
 
 Not yet covered by unit tests: `retrieval/chunking.py`, `observability/trace.py`.

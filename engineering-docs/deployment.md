@@ -28,6 +28,18 @@ All three provider secrets are typically created once, up front, so any
 provider can be selected via `sentinel.yaml` + redeploy without re-touching
 Modal secrets.
 
+### Warm-process resume
+
+The human-in-the-loop approval flow checkpoints a paused run in an **in-process
+`MemorySaver`** (see [Architecture § Human-in-the-loop triage graph](architecture.md#human-in-the-loop-triage-graph)).
+A `POST /triage/resume` therefore only finds its paused thread if it lands in the
+**same warm process** that served the original `POST /triage/stream`. For the
+demo, pin a single warm container (Modal `min_containers`/`keep_warm`) so
+stream and resume share one process. If the thread is gone (cold start, a second
+container, a redeploy), resume returns `409 session_expired` — a clean
+"re-run the scenario" signal rather than a 500. A cross-process persistent
+checkpointer is deferred to a later milestone.
+
 ## Frontend — GitHub Pages
 
 `frontend/` is the working copy; `docs/` is a generated mirror kept in sync by
