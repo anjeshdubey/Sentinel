@@ -590,6 +590,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-langgraph-hitl-triage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002. LangGraph for human-in-the-loop triage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -683,14 +711,14 @@ pytest<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;n
 <tr>
 <td>Unit</td>
 <td><code>tests/unit/</code></td>
-<td>Isolated modules — config merge precedence, gateway provider resolution, models, ingestion, retrieval query building, tools, guardrails, the triage pipeline's individual stages.</td>
-<td>Implemented (251 tests)</td>
+<td>Isolated modules — config merge precedence, gateway provider resolution, models, ingestion, retrieval query building, tools + enrichment, guardrails, the triage pipeline's individual stages, and the LangGraph layer (each node's state delta, confidence routing, interrupt/resume, the auto/approved/rejected finalize outcomes).</td>
+<td>Implemented (300 tests)</td>
 </tr>
 <tr>
 <td>Functional</td>
 <td><code>tests/functional/</code></td>
-<td>Real internal code wired together, external services (LLM, Qdrant, embeddings) faked — full <code>triage_alert()</code> pipeline, real FastAPI endpoints via <code>httpx.ASGITransport</code>.</td>
-<td>Implemented (26 tests)</td>
+<td>Real internal code wired together, external services (LLM, Qdrant, embeddings) faked — full <code>triage_alert()</code> pipeline, and the real FastAPI endpoints via <code>httpx.ASGITransport</code> including graph-driven <code>/triage/stream</code> (with the <code>interrupt</code> frame) and <code>/triage/resume</code> (approve / reject / cached replay / 409 session-expired).</td>
+<td>Implemented (33 tests)</td>
 </tr>
 <tr>
 <td>Integration</td>

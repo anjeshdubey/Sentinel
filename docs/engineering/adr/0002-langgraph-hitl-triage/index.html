@@ -8,25 +8,29 @@
       
       
       
+        <link rel="canonical" href="https://anjeshdubey.github.io/sentinel/engineering/adr/0002-langgraph-hitl-triage/">
+      
+      
+        <link rel="prev" href="../0001-automate-frontend-docs-mirror/">
       
       
       
         
       
       
-      <link rel="icon" href="/sentinel/engineering/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Sentinel Engineering Docs</title>
+        <title>0002. LangGraph for human-in-the-loop triage - Sentinel Engineering Docs</title>
       
     
     
-      <link rel="stylesheet" href="/sentinel/engineering/assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="/sentinel/engineering/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -45,7 +49,7 @@
       
     
     
-    <script>__md_scope=new URL("/sentinel/engineering/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -69,6 +73,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#0002-use-langgraph-for-the-human-in-the-loop-triage-flow" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -81,7 +90,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/sentinel/engineering/." title="Sentinel Engineering Docs" class="md-header__button md-logo" aria-label="Sentinel Engineering Docs" data-md-component="logo">
+    <a href="../.." title="Sentinel Engineering Docs" class="md-header__button md-logo" aria-label="Sentinel Engineering Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -101,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              0002. LangGraph for human-in-the-loop triage
             
           </span>
         </div>
@@ -217,7 +226,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/sentinel/engineering/." title="Sentinel Engineering Docs" class="md-nav__button md-logo" aria-label="Sentinel Engineering Docs" data-md-component="logo">
+    <a href="../.." title="Sentinel Engineering Docs" class="md-nav__button md-logo" aria-label="Sentinel Engineering Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -247,7 +256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/sentinel/engineering/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -274,7 +283,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/sentinel/engineering/architecture/" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   
@@ -301,7 +310,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/sentinel/engineering/repository-layout/" class="md-nav__link">
+      <a href="../../repository-layout/" class="md-nav__link">
         
   
   
@@ -328,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/sentinel/engineering/testing/" class="md-nav__link">
+      <a href="../../testing/" class="md-nav__link">
         
   
   
@@ -355,7 +364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/sentinel/engineering/deployment/" class="md-nav__link">
+      <a href="../../deployment/" class="md-nav__link">
         
   
   
@@ -382,7 +391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/sentinel/engineering/contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -406,8 +415,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -418,11 +429,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
@@ -443,7 +454,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -461,7 +472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/sentinel/engineering/adr/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -489,7 +500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/sentinel/engineering/adr/0001-automate-frontend-docs-mirror/" class="md-nav__link">
+      <a href="../0001-automate-frontend-docs-mirror/" class="md-nav__link">
         
   
   
@@ -514,10 +525,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/sentinel/engineering/adr/0002-langgraph-hitl-triage/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002. LangGraph for human-in-the-loop triage
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -533,6 +571,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -562,6 +653,49 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -574,8 +708,81 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="0002-use-langgraph-for-the-human-in-the-loop-triage-flow">0002. Use LangGraph for the human-in-the-loop triage flow<a class="headerlink" href="#0002-use-langgraph-for-the-human-in-the-loop-triage-flow" title="Permanent link">&para;</a></h1>
+<p><strong>Status</strong>: Accepted
+<strong>Date</strong>: 2026-07-18</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Through Week 4, triage was a single linear function (<code>triage_alert()</code>): retrieve
+runbooks, build the prompt, call the LLM, assemble an <code>IncidentSummary</code>. Week 5
+adds a human approval gate — a low-confidence (or un-grounded) diagnosis must
+pause, wait for an operator to approve or reject, and only then finalize. That
+introduces a control-flow requirement the linear function can't express: a run
+has to <strong>suspend mid-flight, persist its state, and resume later</strong> on a separate
+HTTP request.</p>
+<p>Constraints in play:</p>
+<ul>
+<li>The existing <code>triage_alert()</code> signature is depended on by Weeks 1–4 callers
+  and their tests (the baseline that must stay green), so it had to stay frozen.</li>
+<li>The pause/resume state has to survive between a <code>POST /triage/stream</code> and a
+  later <code>POST /triage/resume</code>.</li>
+<li>The demo runs on a tight budget and a simple deploy (Modal / GitHub Pages);
+  we did not want to stand up external infrastructure (a queue, a database) for
+  this.</li>
+<li>The package must still import for callers that don't use the graph, without
+  forcing a new heavy dependency on them.</li>
+</ul>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Model triage as a small <a href="https://langchain-ai.github.io/langgraph/">LangGraph</a>
+state machine (<code>ingest → enrich → retrieve → diagnose → [approve] → finalize</code>)
+compiled with a <code>MemorySaver</code> checkpointer and <code>interrupt_before=["approve"]</code>.</p>
+<ul>
+<li><strong>Reuse, don't fork.</strong> <code>triage_alert()</code>'s two heavy steps were extracted into
+  <code>retrieve_runbook_context()</code> and <code>diagnose_incident()</code>; both the frozen linear
+  function and the graph's <code>retrieve</code>/<code>diagnose</code> nodes call them, so there is one
+  implementation of the triage core, not two. Likewise the CMDB enrichment was
+  lifted into <code>tools/enrichment.gather_context()</code>, shared by the SSE endpoint and
+  the <code>enrich</code> node.</li>
+<li><strong>Routing policy is single-sourced.</strong> <code>CONFIDENCE_THRESHOLD = 0.80</code> and
+  <code>needs_human_review()</code> live in one place; <code>route_on_confidence</code> reads them.</li>
+<li><strong>Lazy dependency.</strong> LangGraph is an optional <code>graph</code> extra imported lazily by
+  the graph entry points, so <code>import sentinel...</code> still works without it.</li>
+<li><strong>In-process checkpointer for now.</strong> <code>MemorySaver</code> keeps the demo dependency
+  free. Resume must land in the same warm process; when it can't, the endpoint
+  returns <code>409 session_expired</code> rather than a 500. A cross-process persistent
+  checkpointer is deferred until it's actually needed.</li>
+</ul>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p>The approval gate is expressed declaratively (a conditional edge + an
+<code>interrupt_before</code>) instead of as hand-rolled suspend/resume plumbing, and each
+node is independently unit-testable against a plain state dict. The linear path
+is untouched, so the Weeks 1–4 baseline stays green.</p>
+<p>The costs we consciously accepted: a new optional dependency (LangGraph) and its
+learning curve; a <strong>warm-process coupling</strong> for resume that is genuinely fragile
+under multi-container / cold-start deploys (mitigated, not solved, by the <code>409</code>
+and by pinning one warm container for the demo — see
+<a href="../../deployment/#warm-process-resume">Deployment § Warm-process resume</a>); and a
+known LangGraph-1.x msgpack deprecation warning when the checkpointer serializes
+our Pydantic state types, to be addressed when the persistent checkpointer lands.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -618,10 +825,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/sentinel/engineering/", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "/sentinel/engineering/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/sentinel/engineering/assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

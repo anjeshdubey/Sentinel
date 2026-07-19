@@ -579,6 +579,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-langgraph-hitl-triage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002. LangGraph for human-in-the-loop triage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -653,10 +681,10 @@
     ROOT --&gt; ENGDOCS["engineering-docs/&lt;br/&gt;this site's source"]
     ROOT --&gt; ROOTFILES["sentinel.yaml, pyproject.toml,&lt;br/&gt;README.md, TEST_PLAN.md"]
 
-    SRC --&gt; TRIAGE_D["triage/"]
+    SRC --&gt; TRIAGE_D["triage/&lt;br/&gt;engine, extractor, graph, nodes"]
     SRC --&gt; RETRIEVAL_D["retrieval/"]
-    SRC --&gt; TOOLS_D["tools/"]
-    SRC --&gt; MODELS_D["models/"]
+    SRC --&gt; TOOLS_D["tools/&lt;br/&gt;provider, enrichment"]
+    SRC --&gt; MODELS_D["models/&lt;br/&gt;incident, graph_state"]
     SRC --&gt; OBS_D["observability/"]</code></pre>
 <h2 id="directory-map">Directory map<a class="headerlink" href="#directory-map" title="Permanent link">&para;</a></h2>
 <table>
@@ -669,7 +697,7 @@
 <tbody>
 <tr>
 <td><code>src/sentinel/</code></td>
-<td>Core engine — installable package with the triage pipeline, RAG retrieval, and tool-calling layer, independent of the FastAPI/Modal wrapper.</td>
+<td>Core engine — installable package with the triage pipeline (<code>triage/engine.py</code>), the LangGraph human-in-the-loop graph (<code>triage/graph.py</code>, <code>triage/nodes.py</code>, <code>models/graph_state.py</code>), RAG retrieval, and the tool-calling / enrichment layer, independent of the FastAPI/Modal wrapper.</td>
 </tr>
 <tr>
 <td><code>backend/</code></td>

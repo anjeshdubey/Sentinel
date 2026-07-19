@@ -377,6 +377,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#human-in-the-loop-triage-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Human-in-the-loop triage graph
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -601,6 +612,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-langgraph-hitl-triage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002. LangGraph for human-in-the-loop triage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -661,6 +700,17 @@
     <span class="md-ellipsis">
       
         Core engine internals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#human-in-the-loop-triage-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Human-in-the-loop triage graph
       
     </span>
   </a>
@@ -734,15 +784,24 @@ run automatically by CI — see <a href="../contributing/#frontend-docs-sync">Co
 for the full mechanism. Never edit <code>docs/*.html</code>/<code>.js</code>/<code>.css</code>/<code>.json</code> directly.</p>
 <h2 id="core-engine-internals">Core engine internals<a class="headerlink" href="#core-engine-internals" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>triage/engine.py</code> — <code>triage_alert()</code>, the pipeline entry point: hash alert
-  → deterministic ID, retrieve runbook context, build prompt, call the LLM
-  extractor, emit trace events, assemble the final <code>IncidentSummary</code>.</li>
+<li><code>triage/engine.py</code> — the pipeline's reusable steps. <code>triage_alert()</code> is the
+  frozen linear entry point (Weeks 1–4); it now composes two extracted helpers,
+  <code>retrieve_runbook_context()</code> (RAG) and <code>diagnose_incident()</code> (prompt + LLM +
+  assemble <code>IncidentSummary</code>), so the graph nodes run the exact same code rather
+  than a fork of it. <code>run_triage_graph()</code> / <code>resume_triage_graph()</code> are the
+  graph entry points (LangGraph imported lazily, so the package still imports
+  without the optional <code>graph</code> extra).</li>
+<li><code>triage/graph.py</code>, <code>triage/nodes.py</code>, <code>models/graph_state.py</code> — the
+  human-in-the-loop triage graph (see below).</li>
 <li><code>retrieval/</code> — Qdrant-backed RAG: frontmatter-aware runbook chunking, a
   BGE-small (384-dim) embedder, hybrid filtered search, and an idempotent
   indexer.</li>
 <li><code>tools/</code> — a provider abstraction for CMDB enrichment (ownership, deploys,
   dependencies, past incidents), with a <code>json</code> backend reading fixture data
-  and a <code>real</code> backend reserved for a future live-API integration.</li>
+  and a <code>real</code> backend reserved for a future live-API integration.
+  <code>tools/enrichment.py::gather_context()</code> runs the ownership→deploys sequence
+  and renders the prompt enrichment block; both the SSE endpoint and the graph's
+  <code>enrich</code> node call it, so there is one implementation, not two.</li>
 <li><code>gateway.py</code> — multi-provider LLM client factory (Anthropic, Gemini, Groq)
   behind one <code>create_completion()</code> interface, using
   <a href="https://github.com/instructor-ai/instructor">Instructor</a> for structured
@@ -750,6 +809,38 @@ for the full mechanism. Never edit <code>docs/*.html</code>/<code>.js</code>/<co
 </ul>
 <p>See <a href="../repository-layout/">Repository Layout</a> for the full file-by-file
 breakdown.</p>
+<h2 id="human-in-the-loop-triage-graph">Human-in-the-loop triage graph<a class="headerlink" href="#human-in-the-loop-triage-graph" title="Permanent link">&para;</a></h2>
+<p>Triage runs as a <a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> state
+machine. A conditional edge after <code>diagnose</code> splits on confidence: a confident
+diagnosis with a grounded remediation auto-approves and finalizes; anything else
+pauses at a human gate until an operator approves or rejects.</p>
+<pre class="mermaid"><code>flowchart LR
+    START(( )) --&gt; INGEST[ingest]
+    INGEST --&gt; ENRICH[enrich&lt;br/&gt;gather_context]
+    ENRICH --&gt; RETRIEVE[retrieve&lt;br/&gt;RAG]
+    RETRIEVE --&gt; DIAGNOSE[diagnose&lt;br/&gt;LLM]
+    DIAGNOSE --&gt;|"confidence ≥ 0.80&lt;br/&gt;and remediation"| FINALIZE[finalize]
+    DIAGNOSE --&gt;|"else (interrupt_before)"| APPROVE[approve&lt;br/&gt;human gate]
+    APPROVE --&gt; FINALIZE
+    FINALIZE --&gt; END(( ))</code></pre>
+<ul>
+<li><strong>Routing.</strong> <code>route_on_confidence</code> uses <code>CONFIDENCE_THRESHOLD = 0.80</code>. A
+  high-confidence diagnosis <em>with</em> a <code>proposed_remediation</code> auto-approves
+  (<code>approval_status = "auto"</code>); low confidence <strong>or</strong> a missing remediation is
+  forced to the gate.</li>
+<li><strong>Interrupt / resume.</strong> The graph is compiled with a <code>MemorySaver</code>
+  checkpointer and <code>interrupt_before=["approve"]</code>. A gated run pauses with its
+  state checkpointed under a <code>correlation_id</code>; resuming re-invokes the same
+  thread with the human decision. On <strong>reject</strong>, the remediation is cleared so
+  it is never surfaced as actionable.</li>
+<li><strong>Streaming.</strong> <code>POST /triage/stream</code> drives the graph and streams each node's
+  progress as SSE (<code>node_start</code>, <code>tool_call</code>/<code>tool_result</code>, <code>rag_query</code>,
+  <code>llm_call</code>, <code>diagnosis</code>); a gated run ends with an <code>interrupt</code> frame carrying
+  the <code>correlation_id</code>. <code>POST /triage/resume</code> finalizes the paused run and
+  streams <code>finalized</code> → <code>done</code>. The <code>MemorySaver</code> is in-process, so resume must
+  land in the same warm process as its stream — see
+  <a href="../deployment/#warm-process-resume">Deployment § Warm-process resume</a>.</li>
+</ul>
 
 
 

@@ -434,6 +434,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Backend — Modal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#warm-process-resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Warm-process resume
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -601,6 +618,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-langgraph-hitl-triage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002. LangGraph for human-in-the-loop triage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -642,6 +687,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Backend — Modal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#warm-process-resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Warm-process resume
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -707,6 +769,16 @@ modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"
 <p>All three provider secrets are typically created once, up front, so any
 provider can be selected via <code>sentinel.yaml</code> + redeploy without re-touching
 Modal secrets.</p>
+<h3 id="warm-process-resume">Warm-process resume<a class="headerlink" href="#warm-process-resume" title="Permanent link">&para;</a></h3>
+<p>The human-in-the-loop approval flow checkpoints a paused run in an <strong>in-process
+<code>MemorySaver</code></strong> (see <a href="../architecture/#human-in-the-loop-triage-graph">Architecture § Human-in-the-loop triage graph</a>).
+A <code>POST /triage/resume</code> therefore only finds its paused thread if it lands in the
+<strong>same warm process</strong> that served the original <code>POST /triage/stream</code>. For the
+demo, pin a single warm container (Modal <code>min_containers</code>/<code>keep_warm</code>) so
+stream and resume share one process. If the thread is gone (cold start, a second
+container, a redeploy), resume returns <code>409 session_expired</code> — a clean
+"re-run the scenario" signal rather than a 500. A cross-process persistent
+checkpointer is deferred to a later milestone.</p>
 <h2 id="frontend-github-pages">Frontend — GitHub Pages<a class="headerlink" href="#frontend-github-pages" title="Permanent link">&para;</a></h2>
 <p><code>frontend/</code> is the working copy; <code>docs/</code> is a generated mirror kept in sync by
 CI (<code>scripts/sync_frontend_to_docs.py</code>, see

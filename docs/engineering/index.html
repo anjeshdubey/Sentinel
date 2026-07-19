@@ -588,6 +588,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="adr/0002-langgraph-hitl-triage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002. LangGraph for human-in-the-loop triage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -666,10 +694,15 @@
 <h1 id="sentinel-engineering-docs">Sentinel — Engineering Docs<a class="headerlink" href="#sentinel-engineering-docs" title="Permanent link">&para;</a></h1>
 <p>Sentinel is an LLM-powered agent that reads incident alerts, retrieves relevant
 runbooks (RAG), calls tools to gather context (ownership, deploys, dependencies,
-past incidents), and produces a structured diagnosis — streamed to a browser as
-a live trace.</p>
-<p>Built directly on provider SDKs + <a href="https://github.com/instructor-ai/instructor">Instructor</a>
-(no agent framework), with pluggable LLM providers (Anthropic, Gemini, Groq).</p>
+past incidents), produces a structured diagnosis, and — when confidence is low
+or no grounded remediation exists — pauses for human approval before its
+remediation is treated as actionable. The whole run streams to a browser as a
+live trace.</p>
+<p>Structured extraction is done directly on provider SDKs +
+<a href="https://github.com/instructor-ai/instructor">Instructor</a>; a thin
+<a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> state machine orchestrates
+the human-in-the-loop approval flow (interrupt at the gate, resume on decision).
+LLM providers are pluggable (Anthropic, Gemini, Groq).</p>
 <p><strong>Live demo:</strong> https://anjeshdubey.github.io/sentinel/</p>
 <p>This site is for people extending or operating Sentinel. If you just want to
 see it work, use the live demo above instead.</p>
