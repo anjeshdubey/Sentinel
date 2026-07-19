@@ -2,11 +2,16 @@
 
 Sentinel is an LLM-powered agent that reads incident alerts, retrieves relevant
 runbooks (RAG), calls tools to gather context (ownership, deploys, dependencies,
-past incidents), and produces a structured diagnosis — streamed to a browser as
-a live trace.
+past incidents), produces a structured diagnosis, and — when confidence is low
+or no grounded remediation exists — pauses for human approval before its
+remediation is treated as actionable. The whole run streams to a browser as a
+live trace.
 
-Built directly on provider SDKs + [Instructor](https://github.com/instructor-ai/instructor)
-(no agent framework), with pluggable LLM providers (Anthropic, Gemini, Groq).
+Structured extraction is done directly on provider SDKs +
+[Instructor](https://github.com/instructor-ai/instructor); a thin
+[LangGraph](https://langchain-ai.github.io/langgraph/) state machine orchestrates
+the human-in-the-loop approval flow (interrupt at the gate, resume on decision).
+LLM providers are pluggable (Anthropic, Gemini, Groq).
 
 **Live demo:** https://anjeshdubey.github.io/sentinel/
 

@@ -45,3 +45,4 @@ nav:
   - Architecture Decisions:
       - Overview: adr/index.md
       - "0001. Automate frontend/docs mirror": adr/0001-automate-frontend-docs-mirror.md
+      - "0002. LangGraph for human-in-the-loop triage": adr/0002-langgraph-hitl-triage.md

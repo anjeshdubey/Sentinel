@@ -6,3 +6,4 @@ why, not just what. Use `adr-template.md` in this directory to add a new one.
 | ADR | Title | Status |
 |---|---|---|
 | [0001](0001-automate-frontend-docs-mirror.md) | Automate the frontend/ → docs/ mirror instead of retiring it | Accepted |
+| [0002](0002-langgraph-hitl-triage.md) | Use LangGraph for the human-in-the-loop triage flow | Accepted |
