@@ -13,10 +13,58 @@ Structured extraction is done directly on provider SDKs +
 the human-in-the-loop approval flow (interrupt at the gate, resume on decision).
 LLM providers are pluggable (Anthropic, Gemini, Groq).
 
-**Live demo:** https://anjeshdubey.github.io/sentinel/
+**Live demo:** <https://anjeshdubey.github.io/sentinel/>
 
 This site is for people extending or operating Sentinel. If you just want to
 see it work, use the live demo above instead.
+
+---
+
+## Core pillars
+
+```mermaid
+flowchart TD
+    ALERT["Incident Alert"] --> ENRICH["Tool Enrichment<br/>ownership, deploys, dependencies"]
+    ALERT --> RAG["RAG Retrieval<br/>runbooks (Qdrant)"]
+    ENRICH --> DIAGNOSE["LLM Diagnosis<br/>(Instructor, structured output)"]
+    RAG --> DIAGNOSE
+    DIAGNOSE -->|confident + grounded| AUTO["Auto-approved"]
+    DIAGNOSE -->|low confidence or ungrounded| GATE["Human Approval Gate"]
+    GATE -->|approve| AUTO
+    GATE -->|reject| CLEARED["Remediation cleared"]
+```
+
+### Context enrichment
+
+Before reasoning about an incident, Sentinel gathers ownership, recent deploys,
+dependency graph, and past-incident context via a pluggable tool provider —
+so the LLM diagnoses against real system state, not just the alert text.
+
+### RAG over runbooks
+
+Incident context is matched against a Qdrant-backed runbook index so
+diagnoses are grounded in documented remediation steps rather than the
+model's own guesses.
+
+### Structured diagnosis
+
+Provider SDKs + [Instructor](https://github.com/instructor-ai/instructor)
+extract a structured `IncidentSummary` (confidence, root cause, proposed
+remediation) directly — no separate parsing layer.
+
+### Human-in-the-loop gate
+
+A [LangGraph](https://langchain-ai.github.io/langgraph/) state machine
+auto-approves confident, grounded diagnoses and pauses everything else at a
+human gate — remediation is only actionable after approval, or never
+surfaced if rejected.
+
+### Live streaming trace
+
+Every run streams node-by-node progress (tool calls, RAG queries, LLM calls,
+the diagnosis, the approval interrupt) to the browser over SSE.
+
+---
 
 ## Where to start
 
