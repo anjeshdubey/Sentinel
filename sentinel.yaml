@@ -17,12 +17,12 @@
 # environment, this file wins (see src/sentinel/config.py's docstring).
 
 model:
-  provider: "gemini"
-  default: "gemini-flash"
+  provider: "groq"
+  default: "groq-llama"
   # provider: "anthropic"
   # default: "claude-sonnet"
-  # provider: "groq"
-  # default: "<groq-model>"
+  # provider: "gemini"
+  # default: "gemini-flash"
   fallback: "claude-sonnet"
   temperature: 0.0
   max_tokens: 1024
