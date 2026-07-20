@@ -316,6 +316,78 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#core-pillars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core pillars
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core pillars">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#context-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context enrichment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rag-over-runbooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAG over runbooks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-diagnosis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#human-in-the-loop-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Human-in-the-loop gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-streaming-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live streaming trace
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-to-start" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -650,6 +722,78 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#core-pillars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core pillars
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core pillars">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#context-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context enrichment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rag-over-runbooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAG over runbooks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-diagnosis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#human-in-the-loop-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Human-in-the-loop gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-streaming-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live streaming trace
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-to-start" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -703,9 +847,41 @@ live trace.</p>
 <a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> state machine orchestrates
 the human-in-the-loop approval flow (interrupt at the gate, resume on decision).
 LLM providers are pluggable (Anthropic, Gemini, Groq).</p>
-<p><strong>Live demo:</strong> https://anjeshdubey.github.io/sentinel/</p>
+<p><strong>Live demo:</strong> <a href="https://anjeshdubey.github.io/sentinel/">https://anjeshdubey.github.io/sentinel/</a></p>
 <p>This site is for people extending or operating Sentinel. If you just want to
 see it work, use the live demo above instead.</p>
+<hr />
+<h2 id="core-pillars">Core pillars<a class="headerlink" href="#core-pillars" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    ALERT["Incident Alert"] --&gt; ENRICH["Tool Enrichment&lt;br/&gt;ownership, deploys, dependencies"]
+    ALERT --&gt; RAG["RAG Retrieval&lt;br/&gt;runbooks (Qdrant)"]
+    ENRICH --&gt; DIAGNOSE["LLM Diagnosis&lt;br/&gt;(Instructor, structured output)"]
+    RAG --&gt; DIAGNOSE
+    DIAGNOSE --&gt;|confident + grounded| AUTO["Auto-approved"]
+    DIAGNOSE --&gt;|low confidence or ungrounded| GATE["Human Approval Gate"]
+    GATE --&gt;|approve| AUTO
+    GATE --&gt;|reject| CLEARED["Remediation cleared"]</code></pre>
+<h3 id="context-enrichment">Context enrichment<a class="headerlink" href="#context-enrichment" title="Permanent link">&para;</a></h3>
+<p>Before reasoning about an incident, Sentinel gathers ownership, recent deploys,
+dependency graph, and past-incident context via a pluggable tool provider —
+so the LLM diagnoses against real system state, not just the alert text.</p>
+<h3 id="rag-over-runbooks">RAG over runbooks<a class="headerlink" href="#rag-over-runbooks" title="Permanent link">&para;</a></h3>
+<p>Incident context is matched against a Qdrant-backed runbook index so
+diagnoses are grounded in documented remediation steps rather than the
+model's own guesses.</p>
+<h3 id="structured-diagnosis">Structured diagnosis<a class="headerlink" href="#structured-diagnosis" title="Permanent link">&para;</a></h3>
+<p>Provider SDKs + <a href="https://github.com/instructor-ai/instructor">Instructor</a>
+extract a structured <code>IncidentSummary</code> (confidence, root cause, proposed
+remediation) directly — no separate parsing layer.</p>
+<h3 id="human-in-the-loop-gate">Human-in-the-loop gate<a class="headerlink" href="#human-in-the-loop-gate" title="Permanent link">&para;</a></h3>
+<p>A <a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> state machine
+auto-approves confident, grounded diagnoses and pauses everything else at a
+human gate — remediation is only actionable after approval, or never
+surfaced if rejected.</p>
+<h3 id="live-streaming-trace">Live streaming trace<a class="headerlink" href="#live-streaming-trace" title="Permanent link">&para;</a></h3>
+<p>Every run streams node-by-node progress (tool calls, RAG queries, LLM calls,
+the diagnosis, the approval interrupt) to the browser over SSE.</p>
+<hr />
 <h2 id="where-to-start">Where to start<a class="headerlink" href="#where-to-start" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="architecture/">Architecture</a> — how the pieces fit together</li>

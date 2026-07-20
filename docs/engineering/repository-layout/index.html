@@ -382,6 +382,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#core-engine-internals-srcsentinel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core engine internals (src/sentinel/)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -651,6 +662,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#core-engine-internals-srcsentinel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core engine internals (src/sentinel/)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -705,7 +727,7 @@
 </tr>
 <tr>
 <td><code>frontend/</code> + <code>docs/</code></td>
-<td>Static HTML/JS demo UI, no build step. <code>frontend/</code> is the working copy; <code>docs/</code> is a generated GitHub Pages mirror — see <a href="../architecture/#deployment-targets">Architecture</a>.</td>
+<td>Static HTML/JS demo UI, no build step. <code>frontend/</code> is the working copy; <code>docs/</code> is a generated GitHub Pages mirror — see <a href="../deployment/">Deployment &amp; Secrets</a>.</td>
 </tr>
 <tr>
 <td><code>tests/</code></td>
@@ -725,6 +747,32 @@
 </tr>
 </tbody>
 </table>
+<h2 id="core-engine-internals-srcsentinel">Core engine internals (<code>src/sentinel/</code>)<a class="headerlink" href="#core-engine-internals-srcsentinel" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>triage/engine.py</code> — the pipeline's reusable steps. <code>triage_alert()</code> is the
+  frozen linear entry point (Weeks 1–4); it now composes two extracted helpers,
+  <code>retrieve_runbook_context()</code> (RAG) and <code>diagnose_incident()</code> (prompt + LLM +
+  assemble <code>IncidentSummary</code>), so the graph nodes run the exact same code rather
+  than a fork of it. <code>run_triage_graph()</code> / <code>resume_triage_graph()</code> are the
+  graph entry points (LangGraph imported lazily, so the package still imports
+  without the optional <code>graph</code> extra).</li>
+<li><code>triage/graph.py</code>, <code>triage/nodes.py</code>, <code>models/graph_state.py</code> — the
+  human-in-the-loop triage graph — see
+  <a href="../architecture/#human-in-the-loop-triage-graph">Architecture § Human-in-the-loop triage graph</a>.</li>
+<li><code>retrieval/</code> — Qdrant-backed RAG: frontmatter-aware runbook chunking, a
+  BGE-small (384-dim) embedder, hybrid filtered search, and an idempotent
+  indexer.</li>
+<li><code>tools/</code> — a provider abstraction for CMDB enrichment (ownership, deploys,
+  dependencies, past incidents), with a <code>json</code> backend reading fixture data
+  and a <code>real</code> backend reserved for a future live-API integration.
+  <code>tools/enrichment.py::gather_context()</code> runs the ownership→deploys sequence
+  and renders the prompt enrichment block; both the SSE endpoint and the graph's
+  <code>enrich</code> node call it, so there is one implementation, not two.</li>
+<li><code>gateway.py</code> — multi-provider LLM client factory (Anthropic, Gemini, Groq)
+  behind one <code>create_completion()</code> interface, using
+  <a href="https://github.com/instructor-ai/instructor">Instructor</a> for structured
+  output.</li>
+</ul>
 <p><strong>The authoritative, file-by-file breakdown lives in the root
 <a href="https://github.com/anjeshdubey/sentinel/blob/main/README.md#repository-layout"><code>README.md</code></a></strong>
 — this page is a map, not a duplicate. Keeping one detailed table (README's,
