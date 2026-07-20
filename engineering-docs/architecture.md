@@ -30,55 +30,9 @@ flowchart LR
   pipeline, RAG retrieval, and tool-calling layer, independent of the
   FastAPI/Modal wrapper around it.
 
-## Deployment targets
-
-```mermaid
-flowchart TB
-    subgraph Source["Repo (main branch)"]
-        FRONTEND["frontend/<br/>(edited by hand)"]
-        DOCS["docs/<br/>(generated mirror)"]
-        SRC["src/sentinel/ + backend/"]
-    end
-
-    FRONTEND -->|"CI: scripts/sync_frontend_to_docs.py<br/>on push to main"| DOCS
-    DOCS -->|GitHub Pages<br/>serves /docs on main| VISITOR["Live demo visitor"]
-    SRC -->|"modal deploy backend/modal_app.py"| MODAL["Modal<br/>(serverless FastAPI)"]
-    VISITOR -.->|HTTP/SSE| MODAL
-```
-
-`frontend/` is the working copy; `docs/` exists only because GitHub Pages is
-dashboard-configured to serve `/docs` on `main`. The two are kept identical by
-[`scripts/sync_frontend_to_docs.py`](https://github.com/anjeshdubey/sentinel/blob/main/scripts/sync_frontend_to_docs.py),
-run automatically by CI — see [Contributing](contributing.md#frontend-docs-sync)
-for the full mechanism. Never edit `docs/*.html`/`.js`/`.css`/`.json` directly.
-
-## Core engine internals
-
-- `triage/engine.py` — the pipeline's reusable steps. `triage_alert()` is the
-  frozen linear entry point (Weeks 1–4); it now composes two extracted helpers,
-  `retrieve_runbook_context()` (RAG) and `diagnose_incident()` (prompt + LLM +
-  assemble `IncidentSummary`), so the graph nodes run the exact same code rather
-  than a fork of it. `run_triage_graph()` / `resume_triage_graph()` are the
-  graph entry points (LangGraph imported lazily, so the package still imports
-  without the optional `graph` extra).
-- `triage/graph.py`, `triage/nodes.py`, `models/graph_state.py` — the
-  human-in-the-loop triage graph (see below).
-- `retrieval/` — Qdrant-backed RAG: frontmatter-aware runbook chunking, a
-  BGE-small (384-dim) embedder, hybrid filtered search, and an idempotent
-  indexer.
-- `tools/` — a provider abstraction for CMDB enrichment (ownership, deploys,
-  dependencies, past incidents), with a `json` backend reading fixture data
-  and a `real` backend reserved for a future live-API integration.
-  `tools/enrichment.py::gather_context()` runs the ownership→deploys sequence
-  and renders the prompt enrichment block; both the SSE endpoint and the graph's
-  `enrich` node call it, so there is one implementation, not two.
-- `gateway.py` — multi-provider LLM client factory (Anthropic, Gemini, Groq)
-  behind one `create_completion()` interface, using
-  [Instructor](https://github.com/instructor-ai/instructor) for structured
-  output.
-
-See [Repository Layout](repository-layout.md) for the full file-by-file
-breakdown.
+For how this is deployed (Modal backend, GitHub Pages frontend mirror, secrets)
+see [Deployment & Secrets](deployment.md); for a file-by-file breakdown of
+`src/sentinel/` see [Repository Layout](repository-layout.md).
 
 ## Human-in-the-loop triage graph
 

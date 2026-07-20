@@ -1,8 +1,6 @@
 # Deployment & Secrets
 
-Two independent deploy targets, one per half of the app — see
-[Architecture § Deployment targets](architecture.md#deployment-targets) for
-how they relate.
+Two independent deploy targets, one per half of the app.
 
 ## Backend — Modal
 
