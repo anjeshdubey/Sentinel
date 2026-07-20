@@ -35,27 +35,32 @@ flowchart TD
 ```
 
 ### Context enrichment
+
 Before reasoning about an incident, Sentinel gathers ownership, recent deploys,
 dependency graph, and past-incident context via a pluggable tool provider —
 so the LLM diagnoses against real system state, not just the alert text.
 
 ### RAG over runbooks
+
 Incident context is matched against a Qdrant-backed runbook index so
 diagnoses are grounded in documented remediation steps rather than the
 model's own guesses.
 
 ### Structured diagnosis
+
 Provider SDKs + [Instructor](https://github.com/instructor-ai/instructor)
 extract a structured `IncidentSummary` (confidence, root cause, proposed
 remediation) directly — no separate parsing layer.
 
 ### Human-in-the-loop gate
+
 A [LangGraph](https://langchain-ai.github.io/langgraph/) state machine
 auto-approves confident, grounded diagnoses and pauses everything else at a
 human gate — remediation is only actionable after approval, or never
 surfaced if rejected.
 
 ### Live streaming trace
+
 Every run streams node-by-node progress (tool calls, RAG queries, LLM calls,
 the diagnosis, the approval interrupt) to the browser over SSE.
 
