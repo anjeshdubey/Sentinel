@@ -5,7 +5,7 @@
 
 ## Context
 
-`frontend/architecture.html` and the other demo UI files are hand-authored,
+`frontend/index.html` and the other demo UI files are hand-authored,
 JS/JSON-driven pages. GitHub Pages is dashboard-configured to serve `/docs` on
 `main`, and the FastAPI backend never serves `frontend/` directly (confirmed:
 no `StaticFiles`/`Jinja2Templates` mount, and `backend/modal_app.py` explicitly
