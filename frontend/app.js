@@ -14,6 +14,10 @@ const cacheBadge = document.getElementById("cache-badge");
 const timeline = document.getElementById("timeline");
 const closeBtn = document.getElementById("close-trace");
 
+// The scenario currently being traced — the human-approval gate needs it to
+// address its /triage/resume call back at the right scenario.
+let activeScenarioId = null;
+
 closeBtn.addEventListener("click", () => {
   tracePanel.hidden = true;
 });
@@ -46,22 +50,19 @@ function renderScenarios(scenarios) {
   }
 }
 
-function addStep(eventType, label, bodyHtml) {
+function addStep(cls, label, bodyHtml) {
   const step = document.createElement("div");
-  step.className = `step ${eventType}`;
+  step.className = `step ${cls}`;
   step.innerHTML = `<span class="step-label">${label}</span>${bodyHtml}`;
   timeline.appendChild(step);
   step.scrollIntoView({ behavior: "smooth", block: "end" });
+  return step;
 }
 
 function renderEvent(eventType, data) {
   switch (eventType) {
     case "start":
-      if (data.cache_hit) {
-        cacheBadge.hidden = false;
-      } else {
-        cacheBadge.hidden = true;
-      }
+      cacheBadge.hidden = !data.cache_hit;
       break;
     case "alert":
       addStep(
@@ -69,6 +70,10 @@ function renderEvent(eventType, data) {
         "[1] ALERT RECEIVED",
         `<pre>${escapeHtml(JSON.stringify(data.payload, null, 2))}</pre>`
       );
+      break;
+    case "node_start":
+      // Subtle marker showing the graph walking through its nodes.
+      addStep("node-start", `▶ ${escapeHtml(String(data.node || "").toUpperCase())}`, "");
       break;
     case "tool_call":
       addStep(
@@ -104,6 +109,12 @@ function renderEvent(eventType, data) {
         `<pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>`
       );
       break;
+    case "interrupt":
+      addApprovalGate(data);
+      break;
+    case "finalized":
+      renderFinalized(data);
+      break;
     case "done":
       break;
     default:
@@ -111,16 +122,113 @@ function renderEvent(eventType, data) {
   }
 }
 
+// Human-in-the-loop gate: the run paused at `interrupt`. Render the draft
+// diagnosis + proposed remediation with Approve / Reject buttons that resume
+// the paused thread via its correlation_id.
+function addApprovalGate(data) {
+  const scenarioId = activeScenarioId;
+  const step = document.createElement("div");
+  step.className = "step interrupt gate";
+  const conf = typeof data.confidence === "number" ? data.confidence.toFixed(2) : data.confidence;
+  step.innerHTML = `
+    <span class="step-label">⏸ AWAITING HUMAN APPROVAL</span>
+    <div class="gate-draft">
+      <div class="gate-title">${escapeHtml(data.title || "")}</div>
+      <div class="gate-meta">
+        <span class="sev ${escapeHtml(data.severity || "")}">${escapeHtml(data.severity || "")}</span>
+        · ${escapeHtml(data.service || "—")}
+        · confidence ${conf}
+        · team ${escapeHtml(data.assigned_team || "—")}
+      </div>
+      ${
+        data.suspected_root_cause
+          ? `<div class="gate-cause">Suspected cause: ${escapeHtml(data.suspected_root_cause)}</div>`
+          : ""
+      }
+      ${
+        data.proposed_remediation
+          ? `<div class="gate-remediation"><span class="gate-remediation-label">Proposed remediation</span>${escapeHtml(
+              data.proposed_remediation
+            )}</div>`
+          : `<div class="gate-remediation none">No grounded remediation — needs a human call.</div>`
+      }
+    </div>
+    <div class="gate-actions">
+      <button class="gate-btn approve" type="button">✓ Approve</button>
+      <button class="gate-btn reject" type="button">✗ Reject</button>
+    </div>
+  `;
+  timeline.appendChild(step);
+
+  const approveBtn = step.querySelector(".approve");
+  const rejectBtn = step.querySelector(".reject");
+  const decide = (decision) => {
+    approveBtn.disabled = true;
+    rejectBtn.disabled = true;
+    step.classList.add(`decided-${decision}`);
+    resumeScenario(scenarioId, data.correlation_id, decision);
+  };
+  approveBtn.addEventListener("click", () => decide("approve"));
+  rejectBtn.addEventListener("click", () => decide("reject"));
+  step.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+function renderFinalized(data) {
+  const status = data.approval_status || "auto";
+  const actionable = data.proposed_remediation
+    ? `<pre>remediation: ${escapeHtml(data.proposed_remediation)}</pre>`
+    : `<pre>(no actionable remediation)</pre>`;
+  addStep(`finalized ${status}`, `✓ FINALIZED — ${status.toUpperCase()}`, actionable);
+}
+
 function escapeHtml(str) {
-  return str
+  return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
 
+// Read a POST-based SSE response body and render each frame. Native EventSource
+// only supports GET, so we parse "event:"/"data:" frames ourselves. Shared by
+// the initial stream and the resume continuation so both feed one timeline.
+async function readSSE(res) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let frameEnd;
+    while ((frameEnd = buffer.indexOf("\n\n")) !== -1) {
+      const frame = buffer.slice(0, frameEnd);
+      buffer = buffer.slice(frameEnd + 2);
+
+      let eventType = "message";
+      let dataLine = "";
+      for (const line of frame.split("\n")) {
+        if (line.startsWith("event:")) eventType = line.slice(6).trim();
+        if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+      }
+      if (dataLine) {
+        try {
+          renderEvent(eventType, JSON.parse(dataLine));
+        } catch (e) {
+          // ignore malformed frames
+        }
+      }
+      // Small delay between events so the trace visibly animates.
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  }
+}
+
 async function runScenario(scenario, card) {
   timeline.innerHTML = "";
   cacheBadge.hidden = true;
+  activeScenarioId = scenario.id;
   traceTitle.textContent = `Reasoning trace — ${scenario.title}`;
   tracePanel.hidden = false;
   tracePanel.scrollIntoView({ behavior: "smooth" });
@@ -145,39 +253,7 @@ async function runScenario(scenario, card) {
       return;
     }
 
-    // POST-based SSE: native EventSource only supports GET, so we read the
-    // streaming body manually and parse "event:"/"data:" frames ourselves.
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      let frameEnd;
-      while ((frameEnd = buffer.indexOf("\n\n")) !== -1) {
-        const frame = buffer.slice(0, frameEnd);
-        buffer = buffer.slice(frameEnd + 2);
-
-        let eventType = "message";
-        let dataLine = "";
-        for (const line of frame.split("\n")) {
-          if (line.startsWith("event:")) eventType = line.slice(6).trim();
-          if (line.startsWith("data:")) dataLine += line.slice(5).trim();
-        }
-        if (dataLine) {
-          try {
-            renderEvent(eventType, JSON.parse(dataLine));
-          } catch (e) {
-            // ignore malformed frames
-          }
-        }
-        // Small delay between events so the trace visibly animates.
-        await new Promise((r) => setTimeout(r, 150));
-      }
-    }
+    await readSSE(res);
   } catch (e) {
     addStep(
       "alert",
@@ -190,6 +266,50 @@ async function runScenario(scenario, card) {
       card.classList.remove("loading");
       card.querySelector(".spinner")?.remove();
     }
+  }
+}
+
+// Resume a paused run with the human decision, continuing frames into the same
+// timeline. The paused thread lives in the backend's in-process checkpointer,
+// keyed by correlation_id.
+async function resumeScenario(scenarioId, correlationId, decision) {
+  addStep(`resume ${decision}`, `HUMAN DECISION → ${decision.toUpperCase()}`, "");
+
+  try {
+    const res = await fetch(`${API_BASE}/triage/resume`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scenario_id: scenarioId,
+        correlation_id: correlationId,
+        decision,
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      const detail = errBody.detail || errBody;
+      if (res.status === 409) {
+        addStep(
+          "alert",
+          "SESSION EXPIRED",
+          `<pre>${escapeHtml(
+            (detail && detail.message) || "Approval session expired — re-run the scenario."
+          )}</pre>`
+        );
+      } else {
+        addStep("alert", "ERROR", `<pre>${escapeHtml(JSON.stringify(detail, null, 2))}</pre>`);
+      }
+      return;
+    }
+
+    await readSSE(res);
+  } catch (e) {
+    addStep(
+      "alert",
+      "ERROR",
+      `<pre>Could not reach the backend at ${API_BASE}.\n${escapeHtml(String(e))}</pre>`
+    );
   }
 }
 
