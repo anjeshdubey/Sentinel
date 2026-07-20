@@ -221,6 +221,98 @@ main {
 .step.llm_call { border-color: var(--warning); }
 .step.diagnosis { border-color: #fff; background: var(--panel-2); border-radius: 6px; padding: 12px 16px; }
 
+/* --- Node-start markers: subtle stage chips as the graph walks its nodes --- */
+.step.node-start {
+  border-color: var(--border);
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.step.node-start .step-label {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0;
+  font-weight: 500;
+}
+
+/* --- Human-in-the-loop approval gate --- */
+.step.interrupt.gate {
+  border-color: var(--warning);
+  border-left-width: 3px;
+  background: var(--panel-2);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.step.interrupt.gate .step-label { color: var(--warning); }
+
+.gate-draft { margin: 8px 0 12px; }
+.gate-title { font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.gate-meta { color: var(--text-dim); font-size: 0.8rem; }
+.gate-meta .sev { text-transform: uppercase; font-weight: 600; }
+.gate-meta .sev.critical { color: var(--critical); }
+.gate-meta .sev.high, .gate-meta .sev.warning, .gate-meta .sev.medium { color: var(--warning); }
+.gate-meta .sev.low { color: var(--good); }
+.gate-cause { color: var(--text-dim); font-size: 0.82rem; margin-top: 6px; }
+
+.gate-remediation {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--accent);
+  background: var(--panel);
+  border-radius: 0 6px 6px 0;
+  color: var(--text);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.gate-remediation.none { color: var(--text-dim); font-style: italic; border-left-color: var(--border); }
+.gate-remediation-label {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.gate-actions { display: flex; gap: 10px; }
+.gate-btn {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--text);
+  transition: transform 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+}
+.gate-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.gate-btn.approve { border-color: var(--good); color: var(--good); }
+.gate-btn.approve:hover:not(:disabled) { background: rgba(61, 220, 151, 0.12); }
+.gate-btn.reject { border-color: var(--critical); color: var(--critical); }
+.gate-btn.reject:hover:not(:disabled) { background: rgba(255, 93, 93, 0.12); }
+.gate-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.step.gate.decided-approve { border-color: var(--good); }
+.step.gate.decided-reject { border-color: var(--critical); }
+
+/* --- Resume decision marker + finalized outcome --- */
+.step.resume .step-label { color: var(--text); }
+.step.resume.approve { border-color: var(--good); }
+.step.resume.reject { border-color: var(--critical); }
+
+.step.finalized {
+  border-radius: 6px;
+  padding: 10px 16px;
+  background: var(--panel-2);
+}
+.step.finalized.auto, .step.finalized.approved { border-color: var(--good); }
+.step.finalized.auto .step-label, .step.finalized.approved .step-label { color: var(--good); }
+.step.finalized.rejected { border-color: var(--critical); }
+.step.finalized.rejected .step-label { color: var(--critical); }
+
 .step pre {
   margin: 0;
   white-space: pre-wrap;
