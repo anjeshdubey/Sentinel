@@ -13,7 +13,7 @@ Structured extraction is done directly on provider SDKs +
 the human-in-the-loop approval flow (interrupt at the gate, resume on decision).
 LLM providers are pluggable (Anthropic, Gemini, Groq).
 
-**Live demo:** https://anjeshdubey.github.io/sentinel/
+**Live demo:** <https://anjeshdubey.github.io/sentinel/>
 
 This site is for people extending or operating Sentinel. If you just want to
 see it work, use the live demo above instead.

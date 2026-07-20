@@ -7,7 +7,7 @@ and produces a structured diagnosis — streamed to a browser as a live trace.
 Built directly on provider SDKs + [Instructor](https://github.com/instructor-ai/instructor)
 (no agent framework), with pluggable LLM providers (Anthropic, Gemini, Groq).
 
-**Live Demo:** https://anjeshdubey.github.io/sentinel/
+**Live Demo:** <https://anjeshdubey.github.io/sentinel/>
 
 ## Architecture
 
