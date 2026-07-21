@@ -65,6 +65,7 @@ image = (
         "sentence-transformers>=3.0.0",
         "numpy>=1.26.0",
         "qdrant-client>=1.12.0",
+        "langgraph>=0.2.0",
     )
     .add_local_dir(
         str(LOCAL_REPO_ROOT),
@@ -80,6 +81,8 @@ image = (
             "backend/.cache",
             "backend/.cache/**",
             "*.pyc",
+            ".venv",
+            ".venv/**",
         ],
     )
     .run_commands(f"pip install -e {REPO_ROOT}")
