@@ -1,15 +1,23 @@
 # Sentinel configuration
 #
-# To switch provider/model, edit model.provider and model.default below and
-# save — the running dev server (uvicorn --reload) picks it up automatically.
-# No env vars or restart needed. Just tell Claude: "switch to gemini and
-# gemini-flash" or "switch to anthropic and claude-opus" and it will make
-# this edit for you.
+# To switch the primary provider/model, edit model.provider and model.default
+# below and save — the running dev server (uvicorn --reload) picks it up
+# automatically. No env vars or restart needed. Just tell Claude: "switch to
+# gemini and gemini-flash" or "switch to anthropic and claude-opus" and it
+# will make this edit for you.
 #
-# provider: "anthropic" | "gemini" | "groq"
-# default/fallback: short alias (e.g. "claude-sonnet") or full provider model ID
-# Auth: set ANTHROPIC_API_KEY / GEMINI_API_KEY / GROQ_API_KEY matching the
-# active provider (env var, not this file).
+# provider: "together" | "groq" | "gemini" | "anthropic"
+# default: short alias (e.g. "claude-sonnet") or full provider model ID
+# Auth: set TOGETHER_API_KEY / GROQ_API_KEY / GEMINI_API_KEY / ANTHROPIC_API_KEY
+# matching whichever providers you want available (env var, not this file).
+#
+# model.provider only pins the *primary* provider. sentinel.gateway
+# automatically builds a fallback chain from whichever OTHER provider API
+# keys are also set in the environment (Together AI -> Groq -> Gemini ->
+# Anthropic priority), so if the primary provider errors or rate-limits, the
+# call automatically retries against the next configured provider instead of
+# failing the triage run. Set as many *_API_KEY vars as you have for real
+# resilience; only the primary key is strictly required.
 #
 # For a field set only via env var and not here, e.g.
 # SENTINEL_MODEL__PROVIDER=gemini SENTINEL_MODEL__DEFAULT=gemini-flash
@@ -17,13 +25,14 @@
 # environment, this file wins (see src/sentinel/config.py's docstring).
 
 model:
-  provider: "groq"
-  default: "groq-llama"
+  provider: "together"
+  default: "together-qwen-7b"
+  # provider: "groq"
+  # default: "groq-llama"
   # provider: "anthropic"
   # default: "claude-sonnet"
   # provider: "gemini"
   # default: "gemini-flash"
-  fallback: "claude-sonnet"
   temperature: 0.0
   max_tokens: 1024
 
