@@ -11,7 +11,9 @@ Structured extraction is done directly on provider SDKs +
 [Instructor](https://github.com/instructor-ai/instructor); a thin
 [LangGraph](https://langchain-ai.github.io/langgraph/) state machine orchestrates
 the human-in-the-loop approval flow (interrupt at the gate, resume on decision).
-LLM providers are pluggable (Anthropic, Gemini, Groq).
+LLM calls run through a resilient multi-provider gateway (Together AI, Groq,
+Gemini, Anthropic) with automatic fallback and response caching, so the demo
+stays reliable without leaning on any single provider's free tier.
 
 **Live demo:** <https://anjeshdubey.github.io/sentinel/>
 
@@ -63,6 +65,14 @@ surfaced if rejected.
 
 Every run streams node-by-node progress (tool calls, RAG queries, LLM calls,
 the diagnosis, the approval interrupt) to the browser over SSE.
+
+### Resilient LLM gateway
+
+LLM calls automatically fail over across a priority-ordered chain of
+providers (Together AI, Groq, Gemini, Anthropic) and cache successful
+responses — a single provider outage or rate limit never breaks a run. See
+[Architecture § LLM gateway](architecture.md#llm-gateway-fallback-caching)
+for the design.
 
 ---
 

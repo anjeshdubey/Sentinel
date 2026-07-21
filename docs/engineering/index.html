@@ -382,6 +382,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#resilient-llm-gateway" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resilient LLM gateway
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -788,6 +799,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#resilient-llm-gateway" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resilient LLM gateway
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -846,7 +868,9 @@ live trace.</p>
 <a href="https://github.com/instructor-ai/instructor">Instructor</a>; a thin
 <a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> state machine orchestrates
 the human-in-the-loop approval flow (interrupt at the gate, resume on decision).
-LLM providers are pluggable (Anthropic, Gemini, Groq).</p>
+LLM calls run through a resilient multi-provider gateway (Together AI, Groq,
+Gemini, Anthropic) with automatic fallback and response caching, so the demo
+stays reliable without leaning on any single provider's free tier.</p>
 <p><strong>Live demo:</strong> <a href="https://anjeshdubey.github.io/sentinel/">https://anjeshdubey.github.io/sentinel/</a></p>
 <p>This site is for people extending or operating Sentinel. If you just want to
 see it work, use the live demo above instead.</p>
@@ -881,6 +905,12 @@ surfaced if rejected.</p>
 <h3 id="live-streaming-trace">Live streaming trace<a class="headerlink" href="#live-streaming-trace" title="Permanent link">&para;</a></h3>
 <p>Every run streams node-by-node progress (tool calls, RAG queries, LLM calls,
 the diagnosis, the approval interrupt) to the browser over SSE.</p>
+<h3 id="resilient-llm-gateway">Resilient LLM gateway<a class="headerlink" href="#resilient-llm-gateway" title="Permanent link">&para;</a></h3>
+<p>LLM calls automatically fail over across a priority-ordered chain of
+providers (Together AI, Groq, Gemini, Anthropic) and cache successful
+responses — a single provider outage or rate limit never breaks a run. See
+<a href="architecture/#llm-gateway-fallback-caching">Architecture § LLM gateway</a>
+for the design.</p>
 <hr />
 <h2 id="where-to-start">Where to start<a class="headerlink" href="#where-to-start" title="Permanent link">&para;</a></h2>
 <ul>

@@ -464,17 +464,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#local-development" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local development
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -718,17 +707,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#local-development" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local development
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -759,14 +737,20 @@ is baked into the image via <code>add_local_dir</code>, so <strong>a redeploy is
 any <code>sentinel.yaml</code> change</strong> — there's no live-reload on Modal.</p>
 <p>Provider secrets live in Modal's own encrypted secret store, entirely separate
 from <code>.env</code> and the git repo:</p>
-<div class="highlight"><pre><span></span><code>modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"> </span>anthropic-api-key<span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>sk-ant-...
+<div class="highlight"><pre><span></span><code>modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"> </span>together-api-key<span class="w"> </span><span class="nv">TOGETHER_API_KEY</span><span class="o">=</span>...
+modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"> </span>anthropic-api-key<span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>sk-ant-...
 modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"> </span>gemini-api-key<span class="w"> </span><span class="nv">GEMINI_API_KEY</span><span class="o">=</span>...
 modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"> </span>groq-api-key<span class="w"> </span><span class="nv">GROQ_API_KEY</span><span class="o">=</span>...
-modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"> </span>sentinel-provider<span class="w"> </span><span class="nv">SENTINEL_PROVIDER</span><span class="o">=</span>anthropic<span class="w">  </span><span class="c1"># fallback only</span>
+modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"> </span>sentinel-provider<span class="w"> </span><span class="nv">SENTINEL_PROVIDER</span><span class="o">=</span>together
+modal<span class="w"> </span>secret<span class="w"> </span>create<span class="w"> </span>upstash-redis<span class="w"> </span><span class="nv">UPSTASH_REDIS_REST_URL</span><span class="o">=</span>...<span class="w"> </span><span class="nv">UPSTASH_REDIS_REST_TOKEN</span><span class="o">=</span>...
 </code></pre></div>
-<p>All three provider secrets are typically created once, up front, so any
-provider can be selected via <code>sentinel.yaml</code> + redeploy without re-touching
-Modal secrets.</p>
+<p>All provider secrets are typically created once, up front, so any provider
+can be pinned as primary via <code>sentinel.yaml</code> + redeploy without re-touching
+Modal secrets — <code>gateway.py</code> automatically builds the fallback chain (see
+<a href="../architecture/#llm-gateway-fallback-caching">Architecture § LLM gateway</a>)
+from whichever of them are present. The <code>upstash-redis</code> secret is optional:
+without it, caching is silently skipped and every call goes straight to the
+provider chain.</p>
 <h3 id="warm-process-resume">Warm-process resume<a class="headerlink" href="#warm-process-resume" title="Permanent link">&para;</a></h3>
 <p>The human-in-the-loop approval flow checkpoints a paused run in an <strong>in-process
 <code>MemorySaver</code></strong> (see <a href="../architecture/#human-in-the-loop-triage-graph">Architecture § Human-in-the-loop triage graph</a>).
@@ -784,19 +768,10 @@ CI (<code>scripts/sync_frontend_to_docs.py</code>, see
 GitHub Pages is dashboard-configured (Settings → Pages) to serve <code>/docs</code> on
 <code>main</code> — pushing to <code>frontend/</code> and letting the sync bot update <code>docs/</code> is the
 entire deploy step; there's no separate build or publish command to run.</p>
-<h2 id="local-development">Local development<a class="headerlink" href="#local-development" title="Permanent link">&para;</a></h2>
-<p><strong>Local secrets</strong>: <code>backend/.env</code> (git-ignored) holds provider keys as a
-reference file, but <strong>is not auto-loaded</strong> — nothing calls <code>load_dotenv()</code>.
-Export it into the shell running <code>uvicorn</code> yourself:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="k">$(</span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s1">&#39;^#&#39;</span><span class="w"> </span>backend/.env<span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="k">)</span>
-uvicorn<span class="w"> </span>backend.demo_app:app<span class="w"> </span>--reload<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
-</code></pre></div>
-<p>Switching provider/model: edit <code>model.provider</code> / <code>model.default</code> in
-<code>sentinel.yaml</code> (the one file to touch for this, locally or on Modal). The
-dev server re-reads it per request via <code>load_settings()</code> — no restart needed
-for a yaml-only change; restart if you added a new env var.</p>
-<p>Full detail (secrets precedence, provider-key resolution order) lives in the
-root <a href="https://github.com/anjeshdubey/sentinel/blob/main/README.md#secrets-management"><code>README.md</code></a>.</p>
+<p>Switching the primary provider/model: edit <code>model.provider</code> / <code>model.default</code>
+in <code>sentinel.yaml</code> and redeploy to Modal — the one file to touch for this.</p>
+<p>For running the backend locally during development (rather than against the
+deployed Modal instance), see <a href="../contributing/">Contributing</a>.</p>
 
 
 

@@ -5,7 +5,7 @@
 ```mermaid
 flowchart LR
     FE["frontend/ + docs/ mirror<br/>static HTML/JS, no build step"]
-    BE["backend/<br/>FastAPI (local uvicorn or Modal)"]
+    BE["backend/<br/>FastAPI on Modal"]
     CORE["src/sentinel/<br/>core engine"]
     TRIAGE["triage/<br/>extraction pipeline"]
     RETRIEVAL["retrieval/<br/>RAG over runbooks (Qdrant)"]
@@ -20,12 +20,11 @@ flowchart LR
     CORE --> GATEWAY
 ```
 
-- **Frontend**: static HTML/JS demo UI, no build step. `app.js` auto-detects
-  environment — `localhost`/`127.0.0.1` targets a local backend at
-  `http://localhost:8000`; anywhere else targets the deployed Modal backend.
-- **Backend**: plain FastAPI app (`backend/demo_app.py`), deployable locally
-  (`uvicorn`) or serverless (Modal, via `backend/modal_app.py`). Same router
-  and endpoints in both environments — no separate API surface.
+- **Frontend**: static HTML/JS demo UI, no build step, calling the deployed
+  Modal backend directly over HTTP/SSE.
+- **Backend**: a FastAPI app (`backend/demo_app.py`) deployed serverless on
+  [Modal](https://modal.com) (`backend/modal_app.py`), scale-to-zero so it
+  costs nothing while idle between recruiter visits.
 - **Core engine** (`src/sentinel/`): installable package with the triage
   pipeline, RAG retrieval, and tool-calling layer, independent of the
   FastAPI/Modal wrapper around it.
@@ -33,6 +32,46 @@ flowchart LR
 For how this is deployed (Modal backend, GitHub Pages frontend mirror, secrets)
 see [Deployment & Secrets](deployment.md); for a file-by-file breakdown of
 `src/sentinel/` see [Repository Layout](repository-layout.md).
+
+## LLM gateway: fallback + caching
+
+A public, unmonetized demo can't rely on a single LLM provider — free tiers
+throttle unpredictably, and a raw provider outage shouldn't take the whole
+triage run down with it. `gateway.py` builds a priority-ordered chain from
+whichever provider keys are configured, and Instructor's structured-output
+call is retried against the next provider in the chain on any failure, with
+successful responses cached so repeated identical alerts never re-hit the LLM.
+
+```mermaid
+flowchart LR
+    CALL["extract_incident()"] --> CACHE{"Upstash cache<br/>hit?"}
+    CACHE -->|hit| RETURN["Return cached diagnosis<br/>(no LLM call)"]
+    CACHE -->|miss| TOGETHER["Together AI<br/>(primary)"]
+    TOGETHER -->|error| GROQ["Groq"]
+    GROQ -->|error| GEMINI["Gemini"]
+    GEMINI -->|error| ANTHROPIC["Anthropic<br/>(last resort)"]
+    TOGETHER -->|success| STORE["Cache + return"]
+    GROQ -->|success| RETURN2["Return"]
+    GEMINI -->|success| RETURN2
+    ANTHROPIC -->|success| RETURN2
+```
+
+- **Priority order**: Together AI → Groq → Gemini → Anthropic. Together AI
+  leads because it's a metered paid tier with no free-tier rate-limit
+  throttling; Anthropic sits last as the most expensive per call, used only
+  when everything else is down. `sentinel.yaml`'s `model.provider` pins which
+  one is primary — the rest of the chain is built automatically from whatever
+  other provider keys are configured.
+- **Fallback**: each of the four providers uses a different SDK with its own
+  exception hierarchy, so the chain catches broadly (any failure from a
+  provider's completion call) rather than mapping every SDK's specific
+  exception types — a rate limit, timeout, or outage from any provider should
+  all trigger the same "try the next one" response.
+- **Caching**: a successful *primary*-provider response is cached (Upstash,
+  exact-match on the request payload) so an identical alert served again
+  returns instantly without hitting the LLM at all — a fallback response is
+  never cached under the primary's key, so a degraded answer can't get served
+  back as if it were the primary's own.
 
 ## Human-in-the-loop triage graph
 

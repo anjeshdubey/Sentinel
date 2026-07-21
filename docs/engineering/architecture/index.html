@@ -356,6 +356,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#llm-gateway-fallback-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM gateway: fallback + caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#human-in-the-loop-triage-graph" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -663,6 +674,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#llm-gateway-fallback-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM gateway: fallback + caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#human-in-the-loop-triage-graph" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -697,7 +719,7 @@
 <h2 id="request-flow">Request flow<a class="headerlink" href="#request-flow" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>flowchart LR
     FE["frontend/ + docs/ mirror&lt;br/&gt;static HTML/JS, no build step"]
-    BE["backend/&lt;br/&gt;FastAPI (local uvicorn or Modal)"]
+    BE["backend/&lt;br/&gt;FastAPI on Modal"]
     CORE["src/sentinel/&lt;br/&gt;core engine"]
     TRIAGE["triage/&lt;br/&gt;extraction pipeline"]
     RETRIEVAL["retrieval/&lt;br/&gt;RAG over runbooks (Qdrant)"]
@@ -711,12 +733,11 @@
     CORE --&gt; TOOLS
     CORE --&gt; GATEWAY</code></pre>
 <ul>
-<li><strong>Frontend</strong>: static HTML/JS demo UI, no build step. <code>app.js</code> auto-detects
-  environment — <code>localhost</code>/<code>127.0.0.1</code> targets a local backend at
-  <code>http://localhost:8000</code>; anywhere else targets the deployed Modal backend.</li>
-<li><strong>Backend</strong>: plain FastAPI app (<code>backend/demo_app.py</code>), deployable locally
-  (<code>uvicorn</code>) or serverless (Modal, via <code>backend/modal_app.py</code>). Same router
-  and endpoints in both environments — no separate API surface.</li>
+<li><strong>Frontend</strong>: static HTML/JS demo UI, no build step, calling the deployed
+  Modal backend directly over HTTP/SSE.</li>
+<li><strong>Backend</strong>: a FastAPI app (<code>backend/demo_app.py</code>) deployed serverless on
+  <a href="https://modal.com">Modal</a> (<code>backend/modal_app.py</code>), scale-to-zero so it
+  costs nothing while idle between recruiter visits.</li>
 <li><strong>Core engine</strong> (<code>src/sentinel/</code>): installable package with the triage
   pipeline, RAG retrieval, and tool-calling layer, independent of the
   FastAPI/Modal wrapper around it.</li>
@@ -724,6 +745,42 @@
 <p>For how this is deployed (Modal backend, GitHub Pages frontend mirror, secrets)
 see <a href="../deployment/">Deployment &amp; Secrets</a>; for a file-by-file breakdown of
 <code>src/sentinel/</code> see <a href="../repository-layout/">Repository Layout</a>.</p>
+<h2 id="llm-gateway-fallback-caching">LLM gateway: fallback + caching<a class="headerlink" href="#llm-gateway-fallback-caching" title="Permanent link">&para;</a></h2>
+<p>A public, unmonetized demo can't rely on a single LLM provider — free tiers
+throttle unpredictably, and a raw provider outage shouldn't take the whole
+triage run down with it. <code>gateway.py</code> builds a priority-ordered chain from
+whichever provider keys are configured, and Instructor's structured-output
+call is retried against the next provider in the chain on any failure, with
+successful responses cached so repeated identical alerts never re-hit the LLM.</p>
+<pre class="mermaid"><code>flowchart LR
+    CALL["extract_incident()"] --&gt; CACHE{"Upstash cache&lt;br/&gt;hit?"}
+    CACHE --&gt;|hit| RETURN["Return cached diagnosis&lt;br/&gt;(no LLM call)"]
+    CACHE --&gt;|miss| TOGETHER["Together AI&lt;br/&gt;(primary)"]
+    TOGETHER --&gt;|error| GROQ["Groq"]
+    GROQ --&gt;|error| GEMINI["Gemini"]
+    GEMINI --&gt;|error| ANTHROPIC["Anthropic&lt;br/&gt;(last resort)"]
+    TOGETHER --&gt;|success| STORE["Cache + return"]
+    GROQ --&gt;|success| RETURN2["Return"]
+    GEMINI --&gt;|success| RETURN2
+    ANTHROPIC --&gt;|success| RETURN2</code></pre>
+<ul>
+<li><strong>Priority order</strong>: Together AI → Groq → Gemini → Anthropic. Together AI
+  leads because it's a metered paid tier with no free-tier rate-limit
+  throttling; Anthropic sits last as the most expensive per call, used only
+  when everything else is down. <code>sentinel.yaml</code>'s <code>model.provider</code> pins which
+  one is primary — the rest of the chain is built automatically from whatever
+  other provider keys are configured.</li>
+<li><strong>Fallback</strong>: each of the four providers uses a different SDK with its own
+  exception hierarchy, so the chain catches broadly (any failure from a
+  provider's completion call) rather than mapping every SDK's specific
+  exception types — a rate limit, timeout, or outage from any provider should
+  all trigger the same "try the next one" response.</li>
+<li><strong>Caching</strong>: a successful <em>primary</em>-provider response is cached (Upstash,
+  exact-match on the request payload) so an identical alert served again
+  returns instantly without hitting the LLM at all — a fallback response is
+  never cached under the primary's key, so a degraded answer can't get served
+  back as if it were the primary's own.</li>
+</ul>
 <h2 id="human-in-the-loop-triage-graph">Human-in-the-loop triage graph<a class="headerlink" href="#human-in-the-loop-triage-graph" title="Permanent link">&para;</a></h2>
 <p>Triage runs as a <a href="https://langchain-ai.github.io/langgraph/">LangGraph</a> state
 machine. A conditional edge after <code>diagnose</code> splits on confidence: a confident
