@@ -50,10 +50,12 @@ flowchart TD
   `tools/enrichment.py::gather_context()` runs the ownership→deploys sequence
   and renders the prompt enrichment block; both the SSE endpoint and the graph's
   `enrich` node call it, so there is one implementation, not two.
-- `gateway.py` — multi-provider LLM client factory (Anthropic, Gemini, Groq)
-  behind one `create_completion()` interface, using
+- `gateway.py` — multi-provider LLM client factory (Together AI, Groq,
+  Gemini, Anthropic) behind one `create_completion()` interface, using
   [Instructor](https://github.com/instructor-ai/instructor) for structured
-  output.
+  output. Builds an automatic priority-ordered fallback chain and an Upstash
+  response cache — see [Architecture § LLM gateway](architecture.md#llm-gateway-fallback-caching)
+  for the full picture.
 
 **The authoritative, file-by-file breakdown lives in the root
 [`README.md`](https://github.com/anjeshdubey/sentinel/blob/main/README.md#repository-layout)**

@@ -16,15 +16,21 @@ Provider secrets live in Modal's own encrypted secret store, entirely separate
 from `.env` and the git repo:
 
 ```bash
+modal secret create together-api-key TOGETHER_API_KEY=...
 modal secret create anthropic-api-key ANTHROPIC_API_KEY=sk-ant-...
 modal secret create gemini-api-key GEMINI_API_KEY=...
 modal secret create groq-api-key GROQ_API_KEY=...
-modal secret create sentinel-provider SENTINEL_PROVIDER=anthropic  # fallback only
+modal secret create sentinel-provider SENTINEL_PROVIDER=together
+modal secret create upstash-redis UPSTASH_REDIS_REST_URL=... UPSTASH_REDIS_REST_TOKEN=...
 ```
 
-All three provider secrets are typically created once, up front, so any
-provider can be selected via `sentinel.yaml` + redeploy without re-touching
-Modal secrets.
+All provider secrets are typically created once, up front, so any provider
+can be pinned as primary via `sentinel.yaml` + redeploy without re-touching
+Modal secrets — `gateway.py` automatically builds the fallback chain (see
+[Architecture § LLM gateway](architecture.md#llm-gateway-fallback-caching))
+from whichever of them are present. The `upstash-redis` secret is optional:
+without it, caching is silently skipped and every call goes straight to the
+provider chain.
 
 ### Warm-process resume
 
@@ -47,21 +53,8 @@ GitHub Pages is dashboard-configured (Settings → Pages) to serve `/docs` on
 `main` — pushing to `frontend/` and letting the sync bot update `docs/` is the
 entire deploy step; there's no separate build or publish command to run.
 
-## Local development
+Switching the primary provider/model: edit `model.provider` / `model.default`
+in `sentinel.yaml` and redeploy to Modal — the one file to touch for this.
 
-**Local secrets**: `backend/.env` (git-ignored) holds provider keys as a
-reference file, but **is not auto-loaded** — nothing calls `load_dotenv()`.
-Export it into the shell running `uvicorn` yourself:
-
-```bash
-export $(grep -v '^#' backend/.env | xargs)
-uvicorn backend.demo_app:app --reload --port 8000
-```
-
-Switching provider/model: edit `model.provider` / `model.default` in
-`sentinel.yaml` (the one file to touch for this, locally or on Modal). The
-dev server re-reads it per request via `load_settings()` — no restart needed
-for a yaml-only change; restart if you added a new env var.
-
-Full detail (secrets precedence, provider-key resolution order) lives in the
-root [`README.md`](https://github.com/anjeshdubey/sentinel/blob/main/README.md#secrets-management).
+For running the backend locally during development (rather than against the
+deployed Modal instance), see [Contributing](contributing.md).
