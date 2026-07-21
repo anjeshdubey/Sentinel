@@ -14,11 +14,16 @@ class ModelConfig(BaseSettings):
     Model names can be short aliases (e.g. "claude-sonnet") or full provider
     model IDs (e.g. "claude-sonnet-4-5-20250929"). The sentinel.gateway module
     resolves aliases at call time.
+
+    `provider`/`default` only pin the *primary* provider and model —
+    sentinel.gateway.GatewayConfig.chain_from_env() automatically builds a
+    fallback chain from whichever other provider API keys are set in the
+    environment (Together AI -> Groq -> Gemini -> Anthropic), so there is no
+    separate "fallback model" field to configure here.
     """
 
-    provider: str = "anthropic"
-    default: str = "claude-sonnet"
-    fallback: str = "claude-opus"
+    provider: str = "together"
+    default: str = "together-qwen-7b"
     temperature: float = 0.0
     max_tokens: int = 1024
 

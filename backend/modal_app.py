@@ -7,22 +7,29 @@ Deploy with:
 
 Requires (create once; each provider's key only needs to exist so its
 container has the credential available -- it doesn't need to be "active"):
+    modal secret create together-api-key TOGETHER_API_KEY=...
     modal secret create anthropic-api-key ANTHROPIC_API_KEY=sk-ant-...
     modal secret create gemini-api-key GEMINI_API_KEY=...
     modal secret create groq-api-key GROQ_API_KEY=...
-    modal secret create sentinel-provider SENTINEL_PROVIDER=anthropic
+    modal secret create sentinel-provider SENTINEL_PROVIDER=together
+    modal secret create upstash-redis UPSTASH_REDIS_REST_URL=... UPSTASH_REDIS_REST_TOKEN=...
 
-To switch providers, edit `model.provider` (and `model.default`) in
-sentinel.yaml at the repo root, then redeploy:
+sentinel.gateway.GatewayConfig.chain_from_env() automatically builds a
+fallback chain from whichever of the above provider keys are present
+(Together AI -> Groq -> Gemini -> Anthropic priority) -- set as many as you
+have for real resilience. The `sentinel-provider` secret only pins which one
+is *primary*; sentinel.yaml's model.provider is threaded explicitly through
+triage_alert() -> extract_incident() -> GatewayConfig.chain_from_env(
+primary_provider=...), which takes priority over this env var. The
+`upstash-redis` secret is optional: when both UPSTASH_REDIS_REST_URL and
+UPSTASH_REDIS_REST_TOKEN are set, successful primary-provider extractions
+are cached so repeated identical alerts don't re-hit the LLM. See the
+"Switching LLM provider/model" section in the repo root README.md for the
+full picture (local + Modal).
+
+To switch the primary provider, edit `model.provider` (and `model.default`)
+in sentinel.yaml at the repo root, then redeploy:
     modal deploy backend/modal_app.py
-
-The `sentinel-provider` secret (SENTINEL_PROVIDER env var) above is now a
-FALLBACK ONLY -- sentinel.yaml's model.provider is threaded explicitly
-through triage_alert() -> extract_incident() -> GatewayConfig.from_env(
-provider=...), which takes priority over this env var. See the "Switching
-LLM provider/model" section in the repo root README.md for the full picture
-(local + Modal), and that secret can be left as-is; it's harmless, just
-inert for provider selection.
 """
 
 from __future__ import annotations
@@ -48,6 +55,7 @@ image = (
         "httpx>=0.27.0",
         "instructor>=1.5.0",
         "mcp[cli]>=1.20.0",
+        "openai>=1.30.0",
         "pydantic>=2.9.0",
         "pydantic-settings>=2.6.0",
         "typer>=0.12.0",
@@ -83,10 +91,12 @@ app = modal.App("sentinel-demo", image=image)
 
 @app.function(
     secrets=[
+        modal.Secret.from_name("together-api-key"),
         modal.Secret.from_name("anthropic-api-key"),
         modal.Secret.from_name("gemini-api-key"),
         modal.Secret.from_name("groq-api-key"),
         modal.Secret.from_name("sentinel-provider"),
+        modal.Secret.from_name("upstash-redis"),
     ],
     min_containers=0,
 )

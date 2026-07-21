@@ -23,27 +23,33 @@ def _clear_sentinel_env(monkeypatch: pytest.MonkeyPatch) -> None:
             monkeypatch.delenv(key, raising=False)
 
 
-def test_no_yaml_file_uses_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_no_yaml_file_uses_defaults(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     _clear_sentinel_env(monkeypatch)
 
     settings = load_settings(config_path=tmp_path / "does-not-exist.yaml")
 
-    assert settings.model.provider == "anthropic"
-    assert settings.model.default == "claude-sonnet"
+    assert settings.model.provider == "together"
+    assert settings.model.default == "together-qwen-7b"
     assert settings.log_level == "INFO"
 
 
-def test_empty_yaml_file_uses_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_empty_yaml_file_uses_defaults(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     _clear_sentinel_env(monkeypatch)
     config_path = tmp_path / "sentinel.yaml"
     config_path.write_text("")
 
     settings = load_settings(config_path=config_path)
 
-    assert settings.model.default == "claude-sonnet"
+    assert settings.model.default == "together-qwen-7b"
 
 
-def test_malformed_yaml_file_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_malformed_yaml_file_raises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     _clear_sentinel_env(monkeypatch)
     config_path = tmp_path / "sentinel.yaml"
     config_path.write_text("model:\n  default: [unclosed")
@@ -71,13 +77,13 @@ def test_env_value_applied_when_field_absent_from_yaml(
     config_path = tmp_path / "sentinel.yaml"
     # yaml sets a *different* field so the file is non-empty but doesn't
     # touch model.default.
-    config_path.write_text("model:\n  fallback: claude-opus\n")
+    config_path.write_text("model:\n  max_tokens: 2048\n")
     monkeypatch.setenv("SENTINEL_MODEL__DEFAULT", "claude-haiku")
 
     settings = load_settings(config_path=config_path)
 
     assert settings.model.default == "claude-haiku"
-    assert settings.model.fallback == "claude-opus"
+    assert settings.model.max_tokens == 2048
 
 
 def test_yaml_takes_precedence_over_env_for_the_same_field(
