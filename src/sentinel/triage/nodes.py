@@ -22,6 +22,12 @@ the granular events the SSE demo streams (tool_call/tool_result via
 gather_context, rag_query/rag_results translated from the retriever's collector,
 llm_call/diagnosis from diagnose, finalized from finalize). With no emitter
 (headless/tests) the nodes are silent and behave exactly as in PR 3.
+
+When `deps.tracer` is set (a `LangfuseTracer`, built once per run and seeded
+with the run's `correlation_id`), every emitted event is also forwarded to it
+as a span on that run's Langfuse trace — same events, same call site (`_emit`),
+no separate instrumentation. `deps.tracer` is None by default (Langfuse
+disabled or unconfigured), so tracing is opt-in and adds zero overhead when off.
 """
 
 from __future__ import annotations
@@ -63,11 +69,14 @@ class TriageDeps:
     retriever: RunbookRetriever | None = None
     tool_provider: EnrichmentToolProvider | None = None
     emit: EventEmitter | None = None
+    tracer: LangfuseTracer | None = None
 
 
 def _emit(deps: TriageDeps, event: str, data: dict) -> None:
     if deps.emit is not None:
         deps.emit(event, data)
+    if deps.tracer is not None:
+        deps.tracer.log(event, payload=data)
 
 
 def needs_human_review(summary: IncidentSummary) -> bool:
@@ -106,10 +115,14 @@ async def enrich(state: TriageState, deps: TriageDeps) -> dict:
     _emit(deps, "node_start", {"node": "enrich"})
     if deps.tool_provider is None:
         return {"enrichment_block": None, "owner_team": None}
-    # gather_context ignores a None on_event, so this stays silent when unset.
-    result = await gather_context(
-        state["alert"], deps.tool_provider, on_event=deps.emit
+    # Routed through _emit (not deps.emit directly) so tool_call/tool_result
+    # also reach an attached tracer, not just the SSE sink.
+    on_event = (
+        (lambda event, data: _emit(deps, event, data))
+        if deps.emit is not None or deps.tracer is not None
+        else None
     )
+    result = await gather_context(state["alert"], deps.tool_provider, on_event=on_event)
     return {
         "enrichment_block": result.enrichment_block,
         "owner_team": result.owner_team,
