@@ -131,17 +131,26 @@ def _get_checkpointer():
     return _checkpointer
 
 
-def _build_request_graph(emit):
+def _build_request_graph(emit, correlation_id: str):
     """Build a compiled graph bound to a per-request event sink, sharing the
-    process-wide checkpointer so run/resume see the same threads."""
+    process-wide checkpointer so run/resume see the same threads.
+
+    Also builds a Langfuse tracer seeded with correlation_id (None when
+    langfuse_enabled is off/unconfigured) so /triage/resume for the same
+    correlation_id continues the same Langfuse trace as the original stream.
+    """
+    from sentinel.observability.langfuse_tracer import build_tracer
     from sentinel.triage.graph import build_graph
     from sentinel.triage.nodes import TriageDeps
 
+    settings = _get_settings()
+    tracer = build_tracer(settings.observability, correlation_id)
     deps = TriageDeps(
-        settings=_get_settings(),
+        settings=settings,
         retriever=_get_retriever(),
         tool_provider=_get_tool_provider(),
         emit=emit,
+        tracer=tracer,
     )
     return deps, build_graph(deps, checkpointer=_get_checkpointer())
 
@@ -211,10 +220,12 @@ async def _run_graph_and_collect_events(
         metadata=fixture.get("metadata", {}),
     )
 
-    deps, graph = _build_request_graph(emit)
+    deps, graph = _build_request_graph(emit, correlation_id)
     _, result = await run_triage_graph(
         alert, deps, correlation_id=correlation_id, graph=graph
     )
+    if deps.tracer is not None:
+        deps.tracer.flush()
 
     if result.interrupted:
         summary = result.summary
@@ -251,7 +262,7 @@ async def _resume_graph_and_collect_events(
     def emit(event: str, data: dict) -> None:
         events.append({"event": event, "data": data})
 
-    _deps, graph = _build_request_graph(emit)
+    deps, graph = _build_request_graph(emit, correlation_id)
     config = {"configurable": {"thread_id": correlation_id}}
     snapshot = graph.get_state(config)
     # An unknown or already-finalized thread has no pending next node.
@@ -261,6 +272,8 @@ async def _resume_graph_and_collect_events(
     await resume_triage_graph(
         graph, correlation_id=correlation_id, human_decision=decision, human_note=note
     )
+    if deps.tracer is not None:
+        deps.tracer.flush()
     emit("done", {})
     return events
 

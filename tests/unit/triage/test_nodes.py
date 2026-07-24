@@ -296,3 +296,53 @@ class TestBuildInitialState:
         assert state["correlation_id"] == "corr-1"
         assert state["approval_status"] == "pending"
         assert state["requires_human_approval"] is True
+
+
+class _FakeTracer:
+    """Records (name, payload) pairs passed to .log(), like LangfuseTracer."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+
+    def log(self, name: str, *, payload: dict) -> None:
+        self.calls.append((name, payload))
+
+
+class TestTracer:
+    """A node's events reach an attached tracer the same way they reach `emit`
+    (Week 5 PR 6) — via `_emit`, not a separate instrumentation path."""
+
+    def test_ingest_logs_node_start_to_tracer(self) -> None:
+        tracer = _FakeTracer()
+        deps = TriageDeps(make_settings(), tracer=tracer)
+
+        ingest({"raw_alert": make_alert()}, deps)
+
+        assert ("node_start", {"node": "ingest"}) in tracer.calls
+
+    async def test_enrich_tool_events_reach_tracer_not_just_emit(self) -> None:
+        owner = ServiceOwner(
+            service="checkout-api",
+            team="payments",
+            tier=0,
+            escalation_channel="#payments-oncall",
+            aliases=["checkout"],
+        )
+        tracer = _FakeTracer()
+        deps = TriageDeps(
+            make_settings(),
+            tool_provider=_FakeProvider(owner=owner, deploys=[]),
+            tracer=tracer,
+        )
+
+        await enrich({"alert": make_alert()}, deps)
+
+        logged_events = {name for name, _ in tracer.calls}
+        assert "node_start" in logged_events
+        assert "tool_call" in logged_events
+        assert "tool_result" in logged_events
+
+    def test_no_tracer_is_a_silent_no_op(self) -> None:
+        # No tracer, no emit — nodes must not blow up reaching for either.
+        delta = ingest({"raw_alert": make_alert()}, TriageDeps(make_settings()))
+        assert delta["alert"] is not None

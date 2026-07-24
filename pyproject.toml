@@ -32,7 +32,7 @@ rag = [
     "qdrant-client>=1.12.0",
 ]
 observability = [
-    "langfuse>=2.0.0",
+    "langfuse>=4.0.0,<5.0.0",
 ]
 graph = [
     "langgraph>=0.2.0",

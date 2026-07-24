@@ -135,8 +135,10 @@ class ToolsConfig(BaseSettings):
 class ObservabilityConfig(BaseSettings):
     """Configuration for Langfuse observability integration.
 
-    When langfuse_enabled is False (default), the NullTracer is used
-    with zero overhead — no Langfuse imports, no network calls.
+    When langfuse_enabled is False (default, or when keys are missing),
+    `observability.langfuse_tracer.build_tracer()` returns None and
+    `TriageDeps.tracer` stays unset — zero overhead, no Langfuse import,
+    no network calls. See `triage/nodes.py::_emit`.
     """
 
     langfuse_enabled: bool = Field(
