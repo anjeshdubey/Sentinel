@@ -15,7 +15,7 @@ LLM calls run through a resilient multi-provider gateway (Together AI, Groq,
 Gemini, Anthropic) with automatic fallback and response caching, so the demo
 stays reliable without leaning on any single provider's free tier.
 
-**Live demo:** <https://anjeshdubey.github.io/sentinel/>
+**Live demo:** <https://anjesh.ai/Sentinel/>
 
 This site is for people extending or operating Sentinel. If you just want to
 see it work, use the live demo above instead.
